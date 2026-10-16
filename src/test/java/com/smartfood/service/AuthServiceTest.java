@@ -38,4 +38,8 @@ class AuthServiceTest {
     void nullCredentials_throws() {
         assertThrows(IllegalArgumentException.class, () -> auth.login(null, null));
     }
+    @Test
+    void nullPassword_throws() {
+        assertThrows(IllegalArgumentException.class, () -> auth.login("lana", null));
+    }
 }
