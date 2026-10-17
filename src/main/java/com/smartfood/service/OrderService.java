@@ -11,34 +11,40 @@ import java.util.List;
 
 /**
  * Handles placing, cancelling, and updating orders.
+ *
+ * Supports order lifecycle validation and customer
+ * notifications when order status changes.
  */
 public class OrderService {
 
     private final OrderRepository repository;
+
     private final OrderNotificationService notificationService;
 
     private int counter = 0;
 
     /**
-     * Original constructor.
-     * Keeps compatibility with existing Sprint 2 tests.
+     * Creates an OrderService with default notification support.
      *
-     * @param repository the order storage
+     * @param repository order repository
      */
     public OrderService(OrderRepository repository) {
+
         this(repository, new OrderNotificationService());
     }
 
     /**
-     * Constructor with notification support.
+     * Creates an OrderService with notification support.
      *
-     * @param repository the order storage
-     * @param notificationService the notification service
+     * @param repository order repository
+     * @param notificationService notification service
      */
-    public OrderService(OrderRepository repository,
-                        OrderNotificationService notificationService) {
+    public OrderService(
+            OrderRepository repository,
+            OrderNotificationService notificationService) {
 
         if (repository == null || notificationService == null) {
+
             throw new IllegalArgumentException(
                 "Repository and notification service cannot be null"
             );
@@ -49,39 +55,45 @@ public class OrderService {
     }
 
     /**
-     * Registers an observer for order status changes.
+     * Registers an observer for order notifications.
      *
-     * @param observer the observer to register
+     * @param observer observer to register
      */
     public void addObserver(OrderObserver observer) {
+
         notificationService.addObserver(observer);
     }
 
     /**
-     * Removes an observer.
+     * Removes a registered observer.
      *
-     * @param observer the observer to remove
+     * @param observer observer to remove
      */
     public void removeObserver(OrderObserver observer) {
+
         notificationService.removeObserver(observer);
     }
 
     /**
-     * Places a new order after validating it.
+     * Places a new order after validating its details.
      *
-     * @param customer the customer placing the order
-     * @param restaurant the restaurant
-     * @param items the ordered items
-     * @param deliveryAddress the delivery address
-     * @param customerZone the zone of the customer
-     * @return the created order with status PENDING
-     * @throws IllegalArgumentException if the order is invalid
+     * @param customer customer placing the order
+     * @param restaurant selected restaurant
+     * @param items ordered items
+     * @param deliveryAddress delivery address
+     * @param customerZone customer delivery zone
+     * @return newly created order
+     * @throws IllegalArgumentException if order details are invalid
      */
-    public Order placeOrder(User customer, Restaurant restaurant,
-                            List<OrderItem> items,
-                            String deliveryAddress, String customerZone) {
+    public Order placeOrder(
+            User customer,
+            Restaurant restaurant,
+            List<OrderItem> items,
+            String deliveryAddress,
+            String customerZone) {
 
         if (items == null || items.isEmpty()) {
+
             throw new IllegalArgumentException(
                 "Order must contain at least one item"
             );
@@ -90,12 +102,14 @@ public class OrderService {
         for (OrderItem item : items) {
 
             if (item.getQuantity() <= 0) {
+
                 throw new IllegalArgumentException(
                     "Invalid quantity"
                 );
             }
 
             if (!item.getMenuItem().isAvailable()) {
+
                 throw new IllegalArgumentException(
                     "Item not available: "
                     + item.getMenuItem().getName()
@@ -131,6 +145,7 @@ public class OrderService {
         );
 
         if (order.getTotal() < restaurant.getMinimumOrder()) {
+
             throw new IllegalArgumentException(
                 "Order is below the minimum order value"
             );
@@ -142,18 +157,21 @@ public class OrderService {
     }
 
     /**
-     * Cancels an order that has not yet entered preparation.
+     * Cancels an order before preparation begins.
      *
-     * @param orderId the order id
-     * @return the cancelled order
-     * @throws IllegalArgumentException if the order does not exist
-     * @throws IllegalStateException if the order can no longer be cancelled
+     * Only PENDING and CONFIRMED orders can be cancelled.
+     *
+     * @param orderId order identifier
+     * @return cancelled order
+     * @throws IllegalArgumentException if order is not found
+     * @throws IllegalStateException if cancellation is not allowed
      */
     public Order cancelOrder(String orderId) {
 
         Order order = repository.findById(orderId);
 
         if (order == null) {
+
             throw new IllegalArgumentException(
                 "Order not found"
             );
@@ -176,27 +194,49 @@ public class OrderService {
     }
 
     /**
-     * Updates the status of an existing order
-     * and notifies registered observers.
+     * Updates an order status only when the transition
+     * follows the permitted order lifecycle.
      *
-     * @param orderId the order ID
-     * @param newStatus the new order status
-     * @return the updated order
+     * Lifecycle:
+     * PENDING -> CONFIRMED -> PREPARING -> READY
+     * -> OUT_FOR_DELIVERY -> DELIVERED
+     *
+     * DELIVERED and CANCELLED are final states.
+     *
+     * @param orderId order identifier
+     * @param newStatus requested new status
+     * @return updated order
+     * @throws IllegalArgumentException if the order is not found
+     *         or the new status is null
+     * @throws IllegalStateException if the transition is invalid
      */
-    public Order updateOrderStatus(String orderId,
-                                   OrderStatus newStatus) {
+    public Order updateOrderStatus(
+            String orderId,
+            OrderStatus newStatus) {
 
         Order order = repository.findById(orderId);
 
         if (order == null) {
+
             throw new IllegalArgumentException(
                 "Order not found"
             );
         }
 
         if (newStatus == null) {
+
             throw new IllegalArgumentException(
                 "Order status cannot be null"
+            );
+        }
+
+        OrderStatus currentStatus = order.getStatus();
+
+        if (!isValidTransition(currentStatus, newStatus)) {
+
+            throw new IllegalStateException(
+                "Invalid order status transition: "
+                + currentStatus + " -> " + newStatus
             );
         }
 
@@ -206,5 +246,46 @@ public class OrderService {
         );
 
         return order;
+    }
+
+    /**
+     * Checks whether an order status transition is allowed.
+     *
+     * @param current current order status
+     * @param next requested order status
+     * @return true if the transition is valid; false otherwise
+     */
+    private boolean isValidTransition(
+            OrderStatus current,
+            OrderStatus next) {
+
+        if (current == null || next == null) {
+            return false;
+        }
+
+        switch (current) {
+
+            case PENDING:
+                return next == OrderStatus.CONFIRMED;
+
+            case CONFIRMED:
+                return next == OrderStatus.PREPARING;
+
+            case PREPARING:
+                return next == OrderStatus.READY;
+
+            case READY:
+                return next == OrderStatus.OUT_FOR_DELIVERY;
+
+            case OUT_FOR_DELIVERY:
+                return next == OrderStatus.DELIVERED;
+
+            case DELIVERED:
+            case CANCELLED:
+                return false;
+
+            default:
+                return false;
+        }
     }
 }

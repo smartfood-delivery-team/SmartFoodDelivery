@@ -3,7 +3,14 @@ package com.smartfood.domain;
 import java.util.ArrayList;
 import java.util.List;
 
-/** A customer order placed at a restaurant. */
+import com.smartfood.pricing.PricingStrategy;
+
+/**
+ * Represents a customer order placed at a restaurant.
+ *
+ * Supports order lifecycle, driver assignment,
+ * delivery fees, dynamic pricing, and payment status.
+ */
 public class Order {
 
     private final String id;
@@ -14,82 +21,101 @@ public class Order {
 
     private OrderStatus status = OrderStatus.PENDING;
 
-    // Sprint 3: Assigned delivery driver
+    // Sprint 3 - Driver Assignment
     private Driver assignedDriver;
 
+    // Sprint 4 - Delivery Cost
+    private double deliveryDistanceKm;
+    private double deliveryFee;
+
+    // Sprint 4 - Dynamic Pricing
+    private PricingStrategy pricingStrategy;
+
+    // Sprint 4 - Payment
+    private PaymentStatus paymentStatus = PaymentStatus.UNPAID;
+
     /**
-     * Creates an order. The initial status is PENDING.
-     * @param id unique order id
-     * @param customer the customer who placed the order
-     * @param restaurant the restaurant receiving the order
-     * @param items the ordered items
-     * @param deliveryAddress where to deliver
+     * Creates a new order with initial status PENDING.
+     *
+     * @param id unique order identifier
+     * @param customer customer placing the order
+     * @param restaurant restaurant receiving the order
+     * @param items ordered items
+     * @param deliveryAddress delivery destination
      */
-    public Order(String id, User customer, Restaurant restaurant,
-                 List<OrderItem> items, String deliveryAddress) {
+    public Order(
+            String id,
+            User customer,
+            Restaurant restaurant,
+            List<OrderItem> items,
+            String deliveryAddress) {
 
         this.id = id;
         this.customer = customer;
         this.restaurant = restaurant;
         this.items = new ArrayList<>(items);
         this.deliveryAddress = deliveryAddress;
+
+        this.deliveryDistanceKm = 0.0;
+        this.deliveryFee = 0.0;
     }
 
-    /** @return the order id */
+    // ==========================================
+    // Basic Order Information
+    // ==========================================
+
     public String getId() {
         return id;
     }
 
-    /** @return the customer */
     public User getCustomer() {
         return customer;
     }
 
-    /** @return the restaurant */
     public Restaurant getRestaurant() {
         return restaurant;
     }
 
-    /** @return a copy of the ordered items */
     public List<OrderItem> getItems() {
         return new ArrayList<>(items);
     }
 
-    /** @return the delivery address */
     public String getDeliveryAddress() {
         return deliveryAddress;
     }
 
-    /** @return the current status */
     public OrderStatus getStatus() {
         return status;
     }
 
-    /** @param status the new status */
     public void setStatus(OrderStatus status) {
         this.status = status;
     }
 
-    /** @return the sum of all item subtotals */
+    /**
+     * Calculates the food subtotal.
+     *
+     * @return total cost of food items
+     */
     public double getTotal() {
 
-        double total = 0;
+        double total = 0.0;
 
-        for (OrderItem i : items) {
-            total += i.getSubtotal();
+        for (OrderItem item : items) {
+            total += item.getSubtotal();
         }
 
         return total;
     }
 
     // ==========================================
-    // Sprint 3 - Delivery Driver Assignment
+    // Sprint 3 - Driver Assignment
     // ==========================================
 
     /**
-     * Returns the driver assigned to this order.
+     * Returns the assigned driver.
      *
-     * @return assigned driver or null if none
+     * @return assigned driver or null
      */
     public Driver getAssignedDriver() {
         return assignedDriver;
@@ -98,7 +124,7 @@ public class Order {
     /**
      * Assigns an available driver to this order.
      *
-     * @param driver the driver to assign
+     * @param driver driver to assign
      */
     public void assignDriver(Driver driver) {
 
@@ -115,7 +141,119 @@ public class Order {
         }
 
         driver.assign();
-
         this.assignedDriver = driver;
+    }
+
+    // ==========================================
+    // Sprint 4 - Delivery Cost
+    // ==========================================
+
+    /**
+     * Calculates delivery fees based on distance.
+     *
+     * Base fee = 5.0
+     * Fee per kilometer = 2.0
+     *
+     * @param distanceKm delivery distance in kilometers
+     */
+    public void calculateDeliveryFee(double distanceKm) {
+
+        if (!Double.isFinite(distanceKm) || distanceKm < 0) {
+            throw new IllegalArgumentException(
+                "Delivery distance must be a non-negative finite number"
+            );
+        }
+
+        final double baseFee = 5.0;
+        final double feePerKm = 2.0;
+
+        this.deliveryDistanceKm = distanceKm;
+        this.deliveryFee = baseFee + (distanceKm * feePerKm);
+    }
+
+    public double getDeliveryDistanceKm() {
+        return deliveryDistanceKm;
+    }
+
+    public double getDeliveryFee() {
+        return deliveryFee;
+    }
+
+    /**
+     * Returns food subtotal plus delivery fee.
+     *
+     * @return total before dynamic pricing
+     */
+    public double getFinalTotal() {
+        return getTotal() + deliveryFee;
+    }
+
+    // ==========================================
+    // Sprint 4 - Dynamic Pricing
+    // ==========================================
+
+    /**
+     * Sets the pricing strategy.
+     *
+     * @param pricingStrategy selected strategy
+     */
+    public void setPricingStrategy(PricingStrategy pricingStrategy) {
+
+        if (pricingStrategy == null) {
+            throw new IllegalArgumentException(
+                "Pricing strategy cannot be null"
+            );
+        }
+
+        this.pricingStrategy = pricingStrategy;
+    }
+
+    public PricingStrategy getPricingStrategy() {
+        return pricingStrategy;
+    }
+
+    /**
+     * Calculates the final amount after dynamic pricing.
+     *
+     * @return final bill amount
+     */
+    public double getDynamicFinalTotal() {
+
+        double baseTotal = getFinalTotal();
+
+        if (pricingStrategy == null) {
+            return baseTotal;
+        }
+
+        return pricingStrategy.calculatePrice(baseTotal);
+    }
+
+    // ==========================================
+    // Sprint 4 - Payment
+    // ==========================================
+
+    /**
+     * Returns the current payment status.
+     *
+     * @return UNPAID, PAID, or FAILED
+     */
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    /**
+     * Updates the payment status.
+     *
+     * @param paymentStatus new payment status
+     */
+    public void setPaymentStatus(PaymentStatus paymentStatus) {
+
+        if (paymentStatus == null) {
+            throw new IllegalArgumentException(
+                "Payment status cannot be null"
+            );
+        }
+
+        this.paymentStatus = paymentStatus;
     }
 }

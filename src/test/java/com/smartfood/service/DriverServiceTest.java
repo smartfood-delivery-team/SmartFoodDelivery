@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests driver management, selection, assignment,
- * and driver assignment notifications.
+ * release, and driver assignment notifications.
  */
 class DriverServiceTest {
 
@@ -42,6 +42,10 @@ class DriverServiceTest {
             new Driver("D4", "Khaled", false, 1.0, 5)
         );
     }
+
+    // =====================================================
+    // Existing Tests
+    // =====================================================
 
     @Test
     void testFindAvailableDrivers() {
@@ -196,9 +200,6 @@ class DriverServiceTest {
         );
     }
 
-    /**
-     * Tests that the observer receives the assigned driver.
-     */
     @Test
     void testDriverAssignmentNotifiesObserver() {
 
@@ -214,6 +215,7 @@ class DriverServiceTest {
                 new OrderNotificationService();
 
         List<Driver> notifiedDrivers = new ArrayList<>();
+
         List<OrderStatus> receivedStatuses = new ArrayList<>();
 
         OrderObserver observer = new OrderObserver() {
@@ -254,7 +256,6 @@ class DriverServiceTest {
 
         driverService.assignDriver(order);
 
-        // Verify the driver assignment notification.
         assertEquals(1, notifiedDrivers.size());
 
         assertSame(
@@ -267,13 +268,315 @@ class DriverServiceTest {
             notifiedDrivers.get(0).getName()
         );
 
-        // Driver assignment must not change the order status.
-        assertEquals(OrderStatus.PENDING, order.getStatus());
+        assertEquals(
+            OrderStatus.PENDING,
+            order.getStatus()
+        );
 
-        // Driver assignment is not a status-change event.
         assertTrue(receivedStatuses.isEmpty());
 
-        // The assigned driver becomes busy.
         assertFalse(driver.isAvailable());
+    }
+
+    @Test
+    void testAssignDriverRejectsNullOrder() {
+
+        DriverService driverService =
+                new DriverService(
+                    repository,
+                    new NearestDriverStrategy()
+                );
+
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> driverService.assignDriver(null)
+        );
+    }
+
+    // =====================================================
+    // New Tests - Release Driver
+    // =====================================================
+
+    @Test
+    void testReleaseDriverAfterDelivery() {
+
+        DriverService service = new DriverService(
+            repository,
+            new NearestDriverStrategy()
+        );
+
+        Order order = new Order(
+            "ORD-200",
+            null,
+            null,
+            List.of(),
+            "Nablus"
+        );
+
+        Driver driver = service.assignDriver(order);
+
+        assertFalse(driver.isAvailable());
+
+        order.setStatus(OrderStatus.DELIVERED);
+
+        service.releaseDriver(order);
+
+        assertTrue(driver.isAvailable());
+    }
+
+    @Test
+    void testReleaseDriverAfterCancellation() {
+
+        DriverService service = new DriverService(
+            repository,
+            new NearestDriverStrategy()
+        );
+
+        Order order = new Order(
+            "ORD-201",
+            null,
+            null,
+            List.of(),
+            "Nablus"
+        );
+
+        Driver driver = service.assignDriver(order);
+
+        assertFalse(driver.isAvailable());
+
+        order.setStatus(OrderStatus.CANCELLED);
+
+        service.releaseDriver(order);
+
+        assertTrue(driver.isAvailable());
+    }
+
+    @Test
+    void testCannotReleaseDriverBeforeCompletion() {
+
+        DriverService service = new DriverService(
+            repository,
+            new NearestDriverStrategy()
+        );
+
+        Order order = new Order(
+            "ORD-202",
+            null,
+            null,
+            List.of(),
+            "Nablus"
+        );
+
+        Driver driver = service.assignDriver(order);
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> service.releaseDriver(order)
+        );
+
+        assertFalse(driver.isAvailable());
+    }
+
+    @Test
+    void testCannotReleaseOrderWithoutDriver() {
+
+        DriverService service = new DriverService(
+            repository,
+            new NearestDriverStrategy()
+        );
+
+        Order order = new Order(
+            "ORD-203",
+            null,
+            null,
+            List.of(),
+            "Nablus"
+        );
+
+        order.setStatus(OrderStatus.DELIVERED);
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> service.releaseDriver(order)
+        );
+    }
+
+    @Test
+    void testReleaseDriverRejectsNullOrder() {
+
+        DriverService service = new DriverService(
+            repository,
+            new NearestDriverStrategy()
+        );
+
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> service.releaseDriver(null)
+        );
+    }
+
+    // =====================================================
+    // New Tests - Driver Selection Strategy
+    // =====================================================
+
+    @Test
+    void testChangeSelectionStrategy() {
+
+        DriverService service = new DriverService(
+            repository,
+            new NearestDriverStrategy()
+        );
+
+        service.setSelectionStrategy(
+            new FastestDriverStrategy()
+        );
+
+        Order order = new Order(
+            "ORD-204",
+            null,
+            null,
+            List.of(),
+            "Nablus"
+        );
+
+        Driver selected = service.assignDriver(order);
+
+        assertEquals("D3", selected.getId());
+    }
+
+    @Test
+    void testRejectNullSelectionStrategy() {
+
+        DriverService service = new DriverService(
+            repository,
+            new NearestDriverStrategy()
+        );
+
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> service.setSelectionStrategy(null)
+        );
+    }
+
+    @Test
+    void testAssignDriverWhenNoDriversAvailable() {
+
+        DriverRepository emptyRepository =
+                new DriverRepository();
+
+        DriverService service = new DriverService(
+            emptyRepository,
+            new NearestDriverStrategy()
+        );
+
+        Order order = new Order(
+            "ORD-205",
+            null,
+            null,
+            List.of(),
+            "Nablus"
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> service.assignDriver(order)
+        );
+
+        assertNull(order.getAssignedDriver());
+    }
+
+    // =====================================================
+    // New Tests - Constructor Validation
+    // =====================================================
+
+    @Test
+    void testConstructorRejectsNullRepository() {
+
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new DriverService(
+                null,
+                new NearestDriverStrategy(),
+                new OrderNotificationService()
+            )
+        );
+    }
+
+    @Test
+    void testConstructorRejectsNullStrategy() {
+
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new DriverService(
+                repository,
+                null,
+                new OrderNotificationService()
+            )
+        );
+    }
+
+    @Test
+    void testConstructorRejectsNullNotificationService() {
+
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new DriverService(
+                repository,
+                new NearestDriverStrategy(),
+                null
+            )
+        );
+    }
+
+    // =====================================================
+    // New Tests - Observer Notifications
+    // =====================================================
+
+    @Test
+    void testAddObserverThroughDriverService() {
+
+        DriverService service = new DriverService(
+            repository,
+            new NearestDriverStrategy()
+        );
+
+        List<Driver> notifications = new ArrayList<>();
+
+        OrderObserver observer = new OrderObserver() {
+
+            @Override
+            public void onOrderStatusChanged(
+                    Order order,
+                    OrderStatus status) {
+                // Not needed for this test.
+            }
+
+            @Override
+            public void onDriverAssigned(
+                    Order order,
+                    Driver driver) {
+
+                notifications.add(driver);
+            }
+        };
+
+        service.addObserver(observer);
+
+        Order order = new Order(
+            "ORD-206",
+            null,
+            null,
+            List.of(),
+            "Nablus"
+        );
+
+        Driver assigned = service.assignDriver(order);
+
+        assertEquals(1, notifications.size());
+
+        assertSame(
+            assigned,
+            notifications.get(0)
+        );
     }
 }
