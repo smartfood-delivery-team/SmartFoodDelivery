@@ -29,6 +29,7 @@
                 <version>${byte-buddy.version}</version>
             </dependency>
         </dependencies>
+
     </dependencyManagement>
 
     <dependencies>
@@ -49,6 +50,12 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- SQLite Database Driver -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.53.4.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -96,5 +103,6 @@
 
         </plugins>
     </build>
+
 
 </project>
