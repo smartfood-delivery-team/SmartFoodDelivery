@@ -5,18 +5,18 @@ package com.smartfood.domain;
  */
 public class User {
     private final String username;
-    private final String password;
+    private final String passwordHash;
     private final Role role;
 
     /**
      * Creates a user.
      * @param username unique username
-     * @param password user password
+     * @param passwordHash user passwordHash
      * @param role the role of the user
      */
-    public User(String username, String password, Role role) {
+    public User(String username, String passwordHash, Role role) {
         this.username = username;
-        this.password = password;
+        this.passwordHash = passwordHash;
         this.role = role;
     }
 
@@ -24,7 +24,9 @@ public class User {
     public String getUsername() { return username; }
 
     /** @return the password */
-    public String getPassword() { return password; }
+    public String getPasswordHash() {
+        return passwordHash;
+    }
 
     /** @return the user's role */
     public Role getRole() { return role; }

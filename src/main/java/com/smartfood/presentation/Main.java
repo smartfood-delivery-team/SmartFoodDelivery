@@ -2,6 +2,7 @@ package com.smartfood.presentation;
 
 import com.smartfood.domain.*;
 import com.smartfood.repository.*;
+import com.smartfood.security.PasswordHasher;
 import com.smartfood.service.*;
 
 import java.util.List;
@@ -14,15 +15,25 @@ public class Main {
         // Sprint 1 - Authentication
         // =====================================
 
-        UserRepository users = new UserRepository();
+        PasswordHasher hasher = new PasswordHasher();
 
-        users.save(new User("lana", "1234", Role.CUSTOMER));
-        users.save(new User("admin", "admin", Role.MANAGER));
+        UserRepository users = new InMemoryUserRepository();
 
-        AuthService auth = new AuthService(users);
+        users.save(new User(
+                "lana",
+                hasher.hash("1234"),
+                Role.CUSTOMER
+        ));
+
+        users.save(new User(
+                "admin",
+                hasher.hash("admin"),
+                Role.MANAGER
+        ));
+
+        AuthService auth = new AuthService(users, hasher);
 
         User u = auth.login("lana", "1234");
-
         System.out.println(
             "Logged in as: "
             + u.getUsername()
