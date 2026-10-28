@@ -1,7 +1,7 @@
 package com.smartfood.service;
 
 import com.smartfood.domain.*;
-import com.smartfood.repository.RestaurantRepository;
+import com.smartfood.repository.InMemoryRestaurantRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +14,7 @@ class RestaurantServiceTest {
 
     @BeforeEach
     void setUp() {
-        RestaurantRepository repo = new RestaurantRepository();
+        InMemoryRestaurantRepository repo = new InMemoryRestaurantRepository();
         Restaurant open = new Restaurant("Pizza House", true);
         open.addMenuItem(new MenuItem("Margherita", 25.0, true));
         open.addMenuItem(new MenuItem("Pepperoni", 30.0, false));

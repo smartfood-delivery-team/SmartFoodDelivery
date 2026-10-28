@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * order creation, driver assignment, notifications,
  * and successful application execution.
  */
-class MainTest {
+class DemoRunnerTest {
 
     @Test
     void testMainDemoRunsSuccessfully() {
@@ -35,9 +35,10 @@ class MainTest {
 
             // Run the current application demo
             assertDoesNotThrow(
-                    () -> Main.main(new String[0]),
+                    () -> DemoRunner.main(new String[0]),
                     "Main application should run without exceptions"
             );
+
 
         } finally {
             // Restore original console output
