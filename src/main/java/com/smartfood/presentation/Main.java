@@ -1,232 +1,92 @@
 package com.smartfood.presentation;
 
-import com.smartfood.domain.*;
-import com.smartfood.repository.*;
+import com.smartfood.database.DatabaseInitializer;
+import com.smartfood.database.DatabaseManager;
+import com.smartfood.database.DataSeeder;
+
+import com.smartfood.repository.RestaurantRepository;
+import com.smartfood.repository.SqliteRestaurantRepository;
+import com.smartfood.repository.SqliteUserRepository;
+import com.smartfood.repository.UserRepository;
+
 import com.smartfood.security.PasswordHasher;
-import com.smartfood.service.*;
 
-import java.util.List;
+import com.smartfood.service.AuthService;
+import com.smartfood.service.RestaurantService;
 
+import java.util.Scanner;
+
+/**
+ * Main entry point for the Smart Food Delivery application.
+ *
+ * Initializes the SQLite database, seeds demo data,
+ * creates the required services, and launches the
+ * interactive console.
+ */
 public class Main {
 
     public static void main(String[] args) {
 
-        // =====================================
-        // Sprint 1 - Authentication
-        // =====================================
+        try {
 
-        PasswordHasher hasher = new PasswordHasher();
+            // Step 1: Connect to SQLite
+            DatabaseManager databaseManager = new DatabaseManager();
 
-        UserRepository users = new InMemoryUserRepository();
+            // Step 2: Create database tables if they do not exist
+            DatabaseInitializer initializer =
+                    new DatabaseInitializer(databaseManager);
 
-        users.save(new User(
-                "lana",
-                hasher.hash("1234"),
-                Role.CUSTOMER
-        ));
+            initializer.initialize();
 
-        users.save(new User(
-                "admin",
-                hasher.hash("admin"),
-                Role.MANAGER
-        ));
+            // Step 3: Create SQLite repositories
+            UserRepository userRepository =
+                    new SqliteUserRepository(databaseManager);
 
-        AuthService auth = new AuthService(users, hasher);
+            RestaurantRepository restaurantRepository =
+                    new SqliteRestaurantRepository(databaseManager);
 
-        User u = auth.login("lana", "1234");
-        System.out.println(
-            "Logged in as: "
-            + u.getUsername()
-            + " (" + u.getRole() + ")"
-        );
+            // Step 4: Create password hasher
+            PasswordHasher passwordHasher = new PasswordHasher();
 
-        // =====================================
-        // Sprint 1 - Restaurant & Menu
-        // =====================================
+            // Step 5: Insert demo data only when missing
+            DataSeeder seeder = new DataSeeder(
+                    userRepository,
+                    restaurantRepository,
+                    passwordHasher
+            );
 
-        RestaurantRepository repo = new RestaurantRepository();
+            seeder.seed();
 
-        Restaurant pizza = new Restaurant("Pizza House", true);
+            // Step 6: Create services
+            AuthService authService = new AuthService(
+                    userRepository,
+                    passwordHasher
+            );
 
-        pizza.addMenuItem(
-            new MenuItem("Margherita", 25.0, true)
-        );
+            RestaurantService restaurantService =
+                    new RestaurantService(restaurantRepository);
 
-        pizza.addMenuItem(
-            new MenuItem("Pepperoni", 30.0, false)
-        );
+            // Step 7: Start the interactive console
+            Scanner scanner = new Scanner(System.in);
 
-        Restaurant closed = new Restaurant("Closed Cafe", false);
+            ConsoleMenu console = new ConsoleMenu(
+                    authService,
+                    restaurantService,
+                    scanner
+            );
 
-        repo.save(pizza);
-        repo.save(closed);
+            console.start();
 
-        RestaurantService rs = new RestaurantService(repo);
+        } catch (Exception e) {
 
-        rs.getOpenRestaurants().forEach(
-            r -> System.out.println("Open: " + r.getName())
-        );
+            System.err.println(
+                    "Application failed to start: " + e.getMessage()
+            );
 
-        rs.getAvailableMenu("Pizza House").forEach(
-            i -> System.out.println(
-                i.getName() + " - " + i.getPrice()
-            )
-        );
-
-        // =====================================
-        // Sprint 3 - Notification System
-        // =====================================
-
-        OrderNotificationService notificationService =
-                new OrderNotificationService();
-
-        CustomerNotificationObserver customerObserver =
-                new CustomerNotificationObserver();
-
-        notificationService.addObserver(customerObserver);
-
-        // =====================================
-        // Sprint 2 - Order Service
-        // =====================================
-
-        OrderRepository orderRepository =
-                new OrderRepository();
-
-        OrderService orderService =
-                new OrderService(
-                    orderRepository,
-                    notificationService
-                );
-
-        // =====================================
-        // Sprint 3 - Driver Repository
-        // =====================================
-
-        DriverRepository driverRepository =
-                new DriverRepository();
-
-        driverRepository.save(
-            new Driver("D1", "Ahmad", true, 5.0, 15)
-        );
-
-        driverRepository.save(
-            new Driver("D2", "Omar", true, 2.0, 20)
-        );
-
-        driverRepository.save(
-            new Driver("D3", "Ali", true, 8.0, 10)
-        );
-
-        // =====================================
-        // Sprint 3 - Driver Service
-        // =====================================
-
-        DriverService driverService =
-                new DriverService(
-                    driverRepository,
-                    new NearestDriverStrategy(),
-                    notificationService
-                );
-
-        // =====================================
-        // Sprint 2 - Create an Order
-        // =====================================
-
-        MenuItem margherita =
-                new MenuItem("Margherita", 25.0, true);
-
-        OrderItem orderItem =
-                new OrderItem(margherita, 2);
-
-        // Create a valid order using the existing service.
-        // The restaurant has no delivery-zone restriction by default.
-        Order order = orderService.placeOrder(
-            u,
-            pizza,
-            List.of(orderItem),
-            "Nablus",
-            pizza.getDeliveryZone()
-        );
-
-        System.out.println(
-            "\nOrder created: " + order.getId()
-        );
-
-        System.out.println(
-            "Order total: " + order.getTotal()
-        );
-
-        // =====================================
-        // Sprint 3 - Assign Driver
-        // =====================================
-
-        Driver assignedDriver =
-                driverService.assignDriver(order);
-
-        System.out.println(
-            "Assigned driver: "
-            + assignedDriver.getName()
-        );
-
-        System.out.println(
-            "Driver available: "
-            + assignedDriver.isAvailable()
-        );
-
-        // =====================================
-        // Sprint 3 - Order Status Notifications
-        // =====================================
-
-        orderService.updateOrderStatus(
-            order.getId(),
-            OrderStatus.CONFIRMED
-        );
-
-        orderService.updateOrderStatus(
-            order.getId(),
-            OrderStatus.PREPARING
-        );
-
-        orderService.updateOrderStatus(
-            order.getId(),
-            OrderStatus.READY
-        );
-
-        orderService.updateOrderStatus(
-            order.getId(),
-            OrderStatus.OUT_FOR_DELIVERY
-        );
-
-        orderService.updateOrderStatus(
-            order.getId(),
-            OrderStatus.DELIVERED
-        );
-
-        // =====================================
-        // Sprint 3 - Release Driver
-        // =====================================
-
-        driverService.releaseDriver(order);
-
-        System.out.println(
-            "Driver available after delivery: "
-            + assignedDriver.isAvailable()
-        );
-
-        // =====================================
-        // Sprint 3 - Fastest Strategy Example
-        // =====================================
-
-        driverService.setSelectionStrategy(
-            new FastestDriverStrategy()
-        );
-
-        System.out.println(
-            "\nDriver selection strategy changed to Fastest."
-        );
-
-        System.out.println(
-            "\nSmartFoodDelivery demo completed successfully!"
-        );
+            // Keep the failure visible to callers and tests.
+            throw new IllegalStateException(
+                    "Smart Food Delivery startup failed", e
+            );
+        }
     }
 }
