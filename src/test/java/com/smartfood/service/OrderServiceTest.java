@@ -1,6 +1,7 @@
 package com.smartfood.service;
 
 import com.smartfood.domain.*;
+import com.smartfood.repository.InMemoryOrderRepository;
 import com.smartfood.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ class OrderServiceTest {
 
     @BeforeEach
     void setUp() {
-        repo = new OrderRepository();
+        repo = new InMemoryOrderRepository();
         service = new OrderService(repo);
         customer = new User("lana", "1234", Role.CUSTOMER);
         restaurant = new Restaurant("Pizza House", true, "Nablus", 20.0);

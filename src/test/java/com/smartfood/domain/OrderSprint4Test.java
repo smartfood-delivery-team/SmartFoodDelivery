@@ -18,12 +18,30 @@ class OrderSprint4Test {
 
     @BeforeEach
     void setUp() {
+
+        // Create a valid customer
+        User customer = new User(
+                "lana",
+                "test-password-hash",
+                Role.CUSTOMER
+        );
+
+        // Create a valid restaurant
+        Restaurant restaurant = new Restaurant(
+                "Pizza House",
+                true,
+                "Nablus",
+                0.0
+        );
+
+        // Create an order with no food items.
+        // These tests focus on delivery fees and pricing.
         order = new Order(
-            "ORD-S4",
-            null,
-            null,
-            List.of(),
-            "Nablus"
+                "ORD-S4",
+                customer,
+                restaurant,
+                List.of(),
+                "Nablus"
         );
     }
 

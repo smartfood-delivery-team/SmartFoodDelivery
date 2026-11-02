@@ -4,7 +4,9 @@ import com.smartfood.database.DatabaseInitializer;
 import com.smartfood.database.DatabaseManager;
 import com.smartfood.database.DataSeeder;
 
+import com.smartfood.repository.OrderRepository;
 import com.smartfood.repository.RestaurantRepository;
+import com.smartfood.repository.SqliteOrderRepository;
 import com.smartfood.repository.SqliteRestaurantRepository;
 import com.smartfood.repository.SqliteUserRepository;
 import com.smartfood.repository.UserRepository;
@@ -12,6 +14,8 @@ import com.smartfood.repository.UserRepository;
 import com.smartfood.security.PasswordHasher;
 
 import com.smartfood.service.AuthService;
+import com.smartfood.service.OrderNotificationService;
+import com.smartfood.service.OrderService;
 import com.smartfood.service.RestaurantService;
 
 import java.util.Scanner;
@@ -28,11 +32,11 @@ public class Main {
     public static void main(String[] args) {
 
         try {
-
             // Step 1: Connect to SQLite
-            DatabaseManager databaseManager = new DatabaseManager();
+            DatabaseManager databaseManager =
+                    new DatabaseManager();
 
-            // Step 2: Create database tables if they do not exist
+            // Step 2: Initialize database tables
             DatabaseInitializer initializer =
                     new DatabaseInitializer(databaseManager);
 
@@ -45,10 +49,14 @@ public class Main {
             RestaurantRepository restaurantRepository =
                     new SqliteRestaurantRepository(databaseManager);
 
-            // Step 4: Create password hasher
-            PasswordHasher passwordHasher = new PasswordHasher();
+            OrderRepository orderRepository =
+                    new SqliteOrderRepository(databaseManager);
 
-            // Step 5: Insert demo data only when missing
+            // Step 4: Create password hasher
+            PasswordHasher passwordHasher =
+                    new PasswordHasher();
+
+            // Step 5: Seed demo data
             DataSeeder seeder = new DataSeeder(
                     userRepository,
                     restaurantRepository,
@@ -66,12 +74,21 @@ public class Main {
             RestaurantService restaurantService =
                     new RestaurantService(restaurantRepository);
 
-            // Step 7: Start the interactive console
+            OrderNotificationService notificationService =
+                    new OrderNotificationService();
+
+            OrderService orderService = new OrderService(
+                    orderRepository,
+                    notificationService
+            );
+
+            // Step 7: Start interactive console
             Scanner scanner = new Scanner(System.in);
 
             ConsoleMenu console = new ConsoleMenu(
                     authService,
                     restaurantService,
+                    orderService,
                     scanner
             );
 
@@ -80,12 +97,13 @@ public class Main {
         } catch (Exception e) {
 
             System.err.println(
-                    "Application failed to start: " + e.getMessage()
+                    "Application failed to start: "
+                            + e.getMessage()
             );
 
-            // Keep the failure visible to callers and tests.
             throw new IllegalStateException(
-                    "Smart Food Delivery startup failed", e
+                    "Smart Food Delivery startup failed",
+                    e
             );
         }
     }

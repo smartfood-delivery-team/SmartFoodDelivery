@@ -90,7 +90,7 @@ public class DemoRunner {
         // =====================================
 
         OrderRepository orderRepository =
-                new OrderRepository();
+                new InMemoryOrderRepository();
 
         OrderService orderService =
                 new OrderService(

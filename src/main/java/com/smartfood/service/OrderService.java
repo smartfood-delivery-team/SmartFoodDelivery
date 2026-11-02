@@ -8,12 +8,14 @@ import com.smartfood.domain.User;
 import com.smartfood.repository.OrderRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Handles placing, cancelling, and updating orders.
  *
- * Supports order lifecycle validation and customer
- * notifications when order status changes.
+ * Validates order details and delivery policies,
+ * manages order lifecycle transitions, and
+ * notifies observers when order status changes.
  */
 public class OrderService {
 
@@ -21,32 +23,24 @@ public class OrderService {
 
     private final OrderNotificationService notificationService;
 
-    private int counter = 0;
-
     /**
      * Creates an OrderService with default notification support.
-     *
-     * @param repository order repository
      */
     public OrderService(OrderRepository repository) {
-
         this(repository, new OrderNotificationService());
     }
 
     /**
-     * Creates an OrderService with notification support.
-     *
-     * @param repository order repository
-     * @param notificationService notification service
+     * Creates an OrderService with an injected notification service.
      */
     public OrderService(
             OrderRepository repository,
-            OrderNotificationService notificationService) {
+            OrderNotificationService notificationService
+    ) {
 
         if (repository == null || notificationService == null) {
-
             throw new IllegalArgumentException(
-                "Repository and notification service cannot be null"
+                    "Repository and notification service cannot be null"
             );
         }
 
@@ -54,179 +48,218 @@ public class OrderService {
         this.notificationService = notificationService;
     }
 
-    /**
-     * Registers an observer for order notifications.
-     *
-     * @param observer observer to register
-     */
-    public void addObserver(OrderObserver observer) {
+    // ==========================================
+    // OBSERVER MANAGEMENT
+    // ==========================================
 
+    public void addObserver(OrderObserver observer) {
         notificationService.addObserver(observer);
     }
 
-    /**
-     * Removes a registered observer.
-     *
-     * @param observer observer to remove
-     */
     public void removeObserver(OrderObserver observer) {
-
         notificationService.removeObserver(observer);
     }
+
+    // ==========================================
+    // PLACE ORDER
+    // ==========================================
 
     /**
      * Places a new order after validating its details.
      *
-     * @param customer customer placing the order
-     * @param restaurant selected restaurant
-     * @param items ordered items
-     * @param deliveryAddress delivery address
-     * @param customerZone customer delivery zone
-     * @return newly created order
-     * @throws IllegalArgumentException if order details are invalid
+     * @return newly created order with PENDING status
      */
     public Order placeOrder(
             User customer,
             Restaurant restaurant,
             List<OrderItem> items,
             String deliveryAddress,
-            String customerZone) {
+            String customerZone
+    ) {
 
-        if (items == null || items.isEmpty()) {
-
+        // Step 1: Validate customer
+        if (customer == null) {
             throw new IllegalArgumentException(
-                "Order must contain at least one item"
+                    "Customer cannot be null"
+            );
+        }
+
+        // Step 2: Validate restaurant
+        if (restaurant == null) {
+            throw new IllegalArgumentException(
+                    "Restaurant cannot be null"
+            );
+        }
+
+        if (!restaurant.isOpen()) {
+            throw new IllegalArgumentException(
+                    "Cannot order from a closed restaurant"
+            );
+        }
+
+        // Step 3: Validate order items
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Order must contain at least one item"
             );
         }
 
         for (OrderItem item : items) {
 
-            if (item.getQuantity() <= 0) {
-
+            if (item == null || item.getMenuItem() == null) {
                 throw new IllegalArgumentException(
-                    "Invalid quantity"
+                        "Order contains an invalid item"
+                );
+            }
+
+            if (item.getQuantity() <= 0) {
+                throw new IllegalArgumentException(
+                        "Invalid quantity"
                 );
             }
 
             if (!item.getMenuItem().isAvailable()) {
-
                 throw new IllegalArgumentException(
-                    "Item not available: "
-                    + item.getMenuItem().getName()
+                        "Item not available: "
+                                + item.getMenuItem().getName()
+                );
+            }
+
+            double price = item.getMenuItem().getPrice();
+
+            if (!Double.isFinite(price) || price < 0) {
+                throw new IllegalArgumentException(
+                        "Invalid menu item price"
                 );
             }
         }
 
+        // Step 4: Validate delivery address
         if (deliveryAddress == null
-                || deliveryAddress.trim().isEmpty()) {
+                || deliveryAddress.isBlank()) {
 
             throw new IllegalArgumentException(
-                "Invalid delivery address"
+                    "Invalid delivery address"
             );
         }
 
+        // Step 5: Validate delivery zone
         String zone = restaurant.getDeliveryZone();
 
-        if (!zone.isEmpty()
-                && (customerZone == null
-                || !zone.equalsIgnoreCase(customerZone))) {
+        if (zone != null && !zone.isBlank()) {
 
+            if (customerZone == null
+                    || !zone.equalsIgnoreCase(customerZone.trim())) {
+
+                throw new IllegalArgumentException(
+                        "Address is outside the delivery zone"
+                );
+            }
+        }
+
+        // Step 6: Calculate the total
+        double total = 0.0;
+
+        for (OrderItem item : items) {
+            total += item.getSubtotal();
+        }
+
+        if (!Double.isFinite(total)) {
             throw new IllegalArgumentException(
-                "Address is outside the delivery zone"
+                    "Invalid order total"
             );
         }
 
+        // Step 7: Enforce minimum order policy
+        if (total < restaurant.getMinimumOrder()) {
+            throw new IllegalArgumentException(
+                    "Order is below the minimum order value"
+            );
+        }
+
+        // Step 8: Generate a unique order ID
+        String orderId = "ORD-" + UUID.randomUUID();
+
+        // Step 9: Create the order
         Order order = new Order(
-            "ORD-" + (++counter),
-            customer,
-            restaurant,
-            items,
-            deliveryAddress
+                orderId,
+                customer,
+                restaurant,
+                items,
+                deliveryAddress
         );
 
-        if (order.getTotal() < restaurant.getMinimumOrder()) {
-
-            throw new IllegalArgumentException(
-                "Order is below the minimum order value"
-            );
-        }
-
+        // Step 10: Persist the order
         repository.save(order);
 
         return order;
     }
 
+    // ==========================================
+    // CANCEL ORDER
+    // ==========================================
+
     /**
      * Cancels an order before preparation begins.
      *
-     * Only PENDING and CONFIRMED orders can be cancelled.
-     *
-     * @param orderId order identifier
-     * @return cancelled order
-     * @throws IllegalArgumentException if order is not found
-     * @throws IllegalStateException if cancellation is not allowed
+     * The existing project policy allows cancellation
+     * while the order is PENDING or CONFIRMED.
      */
     public Order cancelOrder(String orderId) {
 
         Order order = repository.findById(orderId);
 
         if (order == null) {
-
             throw new IllegalArgumentException(
-                "Order not found"
+                    "Order not found"
             );
         }
 
-        if (order.getStatus() != OrderStatus.PENDING
-                && order.getStatus() != OrderStatus.CONFIRMED) {
+        OrderStatus currentStatus = order.getStatus();
+
+        if (currentStatus != OrderStatus.PENDING
+                && currentStatus != OrderStatus.CONFIRMED) {
 
             throw new IllegalStateException(
-                "Order can no longer be cancelled"
+                    "Order can no longer be cancelled"
             );
         }
 
+        // Update status and notify observers
         notificationService.updateOrderStatus(
-            order,
-            OrderStatus.CANCELLED
+                order,
+                OrderStatus.CANCELLED
         );
+
+        // Persist the new status
+        repository.save(order);
 
         return order;
     }
 
+    // ==========================================
+    // UPDATE ORDER STATUS
+    // ==========================================
+
     /**
-     * Updates an order status only when the transition
-     * follows the permitted order lifecycle.
-     *
-     * Lifecycle:
-     * PENDING -> CONFIRMED -> PREPARING -> READY
-     * -> OUT_FOR_DELIVERY -> DELIVERED
-     *
-     * DELIVERED and CANCELLED are final states.
-     *
-     * @param orderId order identifier
-     * @param newStatus requested new status
-     * @return updated order
-     * @throws IllegalArgumentException if the order is not found
-     *         or the new status is null
-     * @throws IllegalStateException if the transition is invalid
+     * Updates an order status if the transition is valid.
      */
     public Order updateOrderStatus(
             String orderId,
-            OrderStatus newStatus) {
+            OrderStatus newStatus
+    ) {
 
         Order order = repository.findById(orderId);
 
         if (order == null) {
-
             throw new IllegalArgumentException(
-                "Order not found"
+                    "Order not found"
             );
         }
 
         if (newStatus == null) {
-
             throw new IllegalArgumentException(
-                "Order status cannot be null"
+                    "Order status cannot be null"
             );
         }
 
@@ -235,29 +268,34 @@ public class OrderService {
         if (!isValidTransition(currentStatus, newStatus)) {
 
             throw new IllegalStateException(
-                "Invalid order status transition: "
-                + currentStatus + " -> " + newStatus
+                    "Invalid order status transition: "
+                            + currentStatus + " -> " + newStatus
             );
         }
 
+        // Update status and notify observers
         notificationService.updateOrderStatus(
-            order,
-            newStatus
+                order,
+                newStatus
         );
+
+        // Persist the updated status
+        repository.save(order);
 
         return order;
     }
 
+    // ==========================================
+    // ORDER LIFECYCLE VALIDATION
+    // ==========================================
+
     /**
-     * Checks whether an order status transition is allowed.
-     *
-     * @param current current order status
-     * @param next requested order status
-     * @return true if the transition is valid; false otherwise
+     * Checks whether an order status transition is valid.
      */
     private boolean isValidTransition(
             OrderStatus current,
-            OrderStatus next) {
+            OrderStatus next
+    ) {
 
         if (current == null || next == null) {
             return false;
@@ -287,5 +325,23 @@ public class OrderService {
             default:
                 return false;
         }
+    }
+
+    // ==========================================
+    // ORDER RETRIEVAL
+    // ==========================================
+
+    /**
+     * Finds an order by its ID.
+     */
+    public Order findOrderById(String orderId) {
+        return repository.findById(orderId);
+    }
+
+    /**
+     * Returns all stored orders.
+     */
+    public List<Order> findAllOrders() {
+        return repository.findAll();
     }
 }

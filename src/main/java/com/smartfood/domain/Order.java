@@ -48,7 +48,38 @@ public class Order {
             User customer,
             Restaurant restaurant,
             List<OrderItem> items,
-            String deliveryAddress) {
+            String deliveryAddress
+    ) {
+
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Order ID cannot be empty"
+            );
+        }
+
+        if (customer == null) {
+            throw new IllegalArgumentException(
+                    "Customer cannot be null"
+            );
+        }
+
+        if (restaurant == null) {
+            throw new IllegalArgumentException(
+                    "Restaurant cannot be null"
+            );
+        }
+
+        if (items == null) {
+            throw new IllegalArgumentException(
+                    "Order items cannot be null"
+            );
+        }
+
+        if (deliveryAddress == null || deliveryAddress.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Delivery address cannot be empty"
+            );
+        }
 
         this.id = id;
         this.customer = customer;
@@ -89,6 +120,13 @@ public class Order {
     }
 
     public void setStatus(OrderStatus status) {
+
+        if (status == null) {
+            throw new IllegalArgumentException(
+                    "Order status cannot be null"
+            );
+        }
+
         this.status = status;
     }
 

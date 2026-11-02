@@ -1,26 +1,43 @@
 package com.smartfood.domain;
 
-/** A menu item together with the ordered quantity. */
+/**
+ * Represents a menu item and its ordered quantity.
+ */
 public class OrderItem {
+
     private final MenuItem menuItem;
     private final int quantity;
 
     /**
      * Creates an order line.
-     * @param menuItem the ordered menu item
-     * @param quantity the ordered quantity
+     *
+     * @param menuItem the selected menu item
+     * @param quantity the requested quantity
      */
     public OrderItem(MenuItem menuItem, int quantity) {
+
+        if (menuItem == null) {
+            throw new IllegalArgumentException(
+                    "Menu item cannot be null"
+            );
+        }
+
         this.menuItem = menuItem;
         this.quantity = quantity;
     }
 
-    /** @return the ordered menu item */
-    public MenuItem getMenuItem() { return menuItem; }
+    public MenuItem getMenuItem() {
+        return menuItem;
+    }
 
-    /** @return the ordered quantity */
-    public int getQuantity() { return quantity; }
+    public int getQuantity() {
+        return quantity;
+    }
 
-    /** @return price multiplied by quantity */
-    public double getSubtotal() { return menuItem.getPrice() * quantity; }
+    /**
+     * Calculates the subtotal for this order line.
+     */
+    public double getSubtotal() {
+        return menuItem.getPrice() * quantity;
+    }
 }

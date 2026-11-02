@@ -5,6 +5,7 @@ import com.smartfood.domain.Order;
 import com.smartfood.domain.OrderStatus;
 import com.smartfood.repository.DriverRepository;
 
+import com.smartfood.support.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -147,13 +148,7 @@ class DriverServiceTest {
                     new NearestDriverStrategy()
                 );
 
-        Order order = new Order(
-            "ORD-100",
-            null,
-            null,
-            List.of(),
-            "Nablus"
-        );
+        Order order = TestDataFactory.createEmptyOrder("ORD-1");
 
         Driver assignedDriver =
                 driverService.assignDriver(order);
@@ -184,13 +179,7 @@ class DriverServiceTest {
                     new NearestDriverStrategy()
                 );
 
-        Order order = new Order(
-            "ORD-101",
-            null,
-            null,
-            List.of(),
-            "Nablus"
-        );
+        Order order = TestDataFactory.createEmptyOrder("ORD-1");
 
         driverService.assignDriver(order);
 
@@ -246,13 +235,8 @@ class DriverServiceTest {
                     notificationService
                 );
 
-        Order order = new Order(
-            "ORD-102",
-            null,
-            null,
-            List.of(),
-            "Nablus"
-        );
+        Order order = TestDataFactory.createEmptyOrder("ORD-1");
+
 
         driverService.assignDriver(order);
 
@@ -305,13 +289,7 @@ class DriverServiceTest {
             new NearestDriverStrategy()
         );
 
-        Order order = new Order(
-            "ORD-200",
-            null,
-            null,
-            List.of(),
-            "Nablus"
-        );
+        Order order = TestDataFactory.createEmptyOrder("ORD-1");
 
         Driver driver = service.assignDriver(order);
 
@@ -332,13 +310,7 @@ class DriverServiceTest {
             new NearestDriverStrategy()
         );
 
-        Order order = new Order(
-            "ORD-201",
-            null,
-            null,
-            List.of(),
-            "Nablus"
-        );
+        Order order = TestDataFactory.createEmptyOrder("ORD-1");
 
         Driver driver = service.assignDriver(order);
 
@@ -359,13 +331,7 @@ class DriverServiceTest {
             new NearestDriverStrategy()
         );
 
-        Order order = new Order(
-            "ORD-202",
-            null,
-            null,
-            List.of(),
-            "Nablus"
-        );
+        Order order = TestDataFactory.createEmptyOrder("ORD-1");
 
         Driver driver = service.assignDriver(order);
 
@@ -385,13 +351,7 @@ class DriverServiceTest {
             new NearestDriverStrategy()
         );
 
-        Order order = new Order(
-            "ORD-203",
-            null,
-            null,
-            List.of(),
-            "Nablus"
-        );
+        Order order = TestDataFactory.createEmptyOrder("ORD-1");
 
         order.setStatus(OrderStatus.DELIVERED);
 
@@ -431,13 +391,8 @@ class DriverServiceTest {
             new FastestDriverStrategy()
         );
 
-        Order order = new Order(
-            "ORD-204",
-            null,
-            null,
-            List.of(),
-            "Nablus"
-        );
+        Order order = TestDataFactory.createEmptyOrder("ORD-1");
+
 
         Driver selected = service.assignDriver(order);
 
@@ -469,14 +424,7 @@ class DriverServiceTest {
             new NearestDriverStrategy()
         );
 
-        Order order = new Order(
-            "ORD-205",
-            null,
-            null,
-            List.of(),
-            "Nablus"
-        );
-
+        Order order = TestDataFactory.createEmptyOrder("ORD-1");
         assertThrows(
             IllegalStateException.class,
             () -> service.assignDriver(order)
@@ -562,13 +510,10 @@ class DriverServiceTest {
 
         service.addObserver(observer);
 
-        Order order = new Order(
-            "ORD-206",
-            null,
-            null,
-            List.of(),
-            "Nablus"
-        );
+        Order order = TestDataFactory.createEmptyOrder("ORD-1");
+
+
+
 
         Driver assigned = service.assignDriver(order);
 
