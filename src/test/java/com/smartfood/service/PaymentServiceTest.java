@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 
+import com.smartfood.support.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,13 +20,7 @@ class PaymentServiceTest {
     void setUp() {
         paymentService = new PaymentService();
 
-        order = new Order(
-            "ORD-TEST",
-            null,
-            null,
-            List.of(),
-            "Nablus"
-        );
+        order = TestDataFactory.createEmptyOrder("ORD-1");
     }
 
     @Test

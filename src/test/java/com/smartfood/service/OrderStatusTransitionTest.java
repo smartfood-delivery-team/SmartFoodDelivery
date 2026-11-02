@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 
+import com.smartfood.support.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -24,13 +25,7 @@ class OrderStatusTransitionTest {
 
         repository = mock(OrderRepository.class);
 
-        order = new Order(
-            "ORD-S4",
-            null,
-            null,
-            List.of(),
-            "Nablus"
-        );
+        order = TestDataFactory.createEmptyOrder("ORD-1");
 
         when(repository.findById("ORD-S4")).thenReturn(order);
 

@@ -4,6 +4,7 @@ import com.smartfood.domain.Driver;
 import com.smartfood.domain.Order;
 import com.smartfood.domain.OrderStatus;
 
+import com.smartfood.support.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -23,13 +24,7 @@ class OrderNotificationServiceTest {
 
         notificationService = new OrderNotificationService();
 
-        order = new Order(
-            "ORD-200",
-            null,
-            null,
-            List.of(),
-            "Nablus"
-        );
+        order = TestDataFactory.createEmptyOrder("ORD-1");
     }
 
     @Test

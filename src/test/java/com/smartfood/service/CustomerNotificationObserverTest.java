@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+import com.smartfood.support.TestDataFactory;
 /**
  * Tests customer notifications for order status changes
  * and driver assignments.
@@ -31,14 +31,8 @@ class CustomerNotificationObserverTest {
     void setUp() {
 
         observer = new CustomerNotificationObserver();
+        order = TestDataFactory.createEmptyOrder("ORD-1");
 
-        order = new Order(
-            "ORD-300",
-            null,
-            null,
-            List.of(),
-            "Nablus"
-        );
 
         // Save the original console output.
         originalOut = System.out;
@@ -79,7 +73,7 @@ class CustomerNotificationObserverTest {
         );
 
         assertTrue(
-            output.contains("ORD-300")
+            output.contains("ORD-1")
         );
 
         assertTrue(
@@ -87,7 +81,7 @@ class CustomerNotificationObserverTest {
         );
 
         assertTrue(
-            output.contains("Unknown")
+            output.contains("lana")
         );
     }
 
@@ -108,7 +102,7 @@ class CustomerNotificationObserverTest {
         );
 
         assertTrue(
-            output.contains("ORD-300")
+            output.contains("ORD-1")
         );
     }
 
@@ -165,11 +159,11 @@ class CustomerNotificationObserverTest {
         );
 
         assertTrue(
-            output.contains("ORD-300")
+            output.contains("ORD-1")
         );
 
         assertTrue(
-            output.contains("Unknown")
+            output.contains("lana")
         );
     }
 
@@ -195,7 +189,7 @@ class CustomerNotificationObserverTest {
 
         assertTrue(
             output.contains(
-                "Driver Omar has been assigned to order ORD-300"
+                "Driver Omar has been assigned to order ORD-1"
             )
         );
     }

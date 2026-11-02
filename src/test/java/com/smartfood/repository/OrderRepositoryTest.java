@@ -11,7 +11,7 @@ class OrderRepositoryTest {
 
     @Test
     void findAllReturnsSavedOrders() {
-        OrderRepository repo = new OrderRepository();
+        OrderRepository repo = new InMemoryOrderRepository();
         Order order = new Order("ORD-1", new User("lana", "1234", Role.CUSTOMER),
                 new Restaurant("Pizza House", true), List.of(), "Main St 5");
         repo.save(order);
@@ -20,6 +20,6 @@ class OrderRepositoryTest {
 
     @Test
     void findByIdUnknownReturnsNull() {
-        assertNull(new OrderRepository().findById("ORD-999"));
+        assertNull(new InMemoryOrderRepository().findById("ORD-999"));
     }
 }

@@ -33,11 +33,17 @@ public class DatabaseInitializerTest {
                 Connection connection = db.getConnection();
                 Statement statement = connection.createStatement();
                 ResultSet result = statement.executeQuery("""
-                SELECT name
-                FROM sqlite_master
-                WHERE type = 'table'
-                  AND name IN ('users', 'restaurants', 'menu_items')
-                """)
+    SELECT name
+    FROM sqlite_master
+    WHERE type = 'table'
+      AND name IN (
+          'users',
+          'restaurants',
+          'menu_items',
+          'orders',
+          'order_items'
+      )
+    """)
         ) {
             int count = 0;
 
@@ -45,7 +51,7 @@ public class DatabaseInitializerTest {
                 count++;
             }
 
-            assertEquals(3, count);
+            assertEquals(5, count);
         }
     }
 
@@ -118,6 +124,44 @@ public class DatabaseInitializerTest {
                         (restaurant_id, name, price, available)
                         VALUES (1, 'Pizza', -25.0, 1)
                         """)
+            );
+        }
+    }
+    @Test
+    void testOrderForeignKeyConstraint() throws SQLException {
+
+        Path dbPath = tempDir.resolve("test-order-fk.db");
+
+        DatabaseManager db = new DatabaseManager(
+                "jdbc:sqlite:" + dbPath.toAbsolutePath()
+        );
+
+        new DatabaseInitializer(db).initialize();
+
+        try (
+                Connection connection = db.getConnection();
+                Statement statement = connection.createStatement()
+        ) {
+
+            assertThrows(SQLException.class, () ->
+                    statement.executeUpdate("""
+                    INSERT INTO orders (
+                        id,
+                        customer_username,
+                        restaurant_id,
+                        delivery_address,
+                        status,
+                        total
+                    )
+                    VALUES (
+                        'ORD-1',
+                        'missing-user',
+                        999,
+                        'Nablus',
+                        'PENDING',
+                        50.0
+                    )
+                    """)
             );
         }
     }
