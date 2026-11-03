@@ -26,7 +26,7 @@ import com.smartfood.service.OrderService;
 import com.smartfood.service.RestaurantService;
 
 import java.util.Scanner;
-
+import com.smartfood.service.PaymentService;
 /**
  * Main entry point for the Smart Food Delivery application.
  *
@@ -180,6 +180,7 @@ public class Main {
                     new NearestDriverStrategy(),
                     notificationService
             );
+            PaymentService paymentService = new PaymentService();
 
             // ==========================================
             // STEP 12: START INTERACTIVE CONSOLE
@@ -193,6 +194,7 @@ public class Main {
                     orderService,
                     driverService,
                     orderRepository,
+                    paymentService,
                     scanner
             );
 
