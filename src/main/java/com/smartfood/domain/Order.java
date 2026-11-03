@@ -294,4 +294,26 @@ public class Order {
 
         this.paymentStatus = paymentStatus;
     }
+    /**
+     * Restores a previously assigned driver from persistent storage.
+     *
+     * Unlike assignDriver(), this method does not change
+     * driver availability.
+     */
+    public void restoreAssignedDriver(Driver driver) {
+
+        if (driver == null) {
+            throw new IllegalArgumentException(
+                    "Driver cannot be null"
+            );
+        }
+
+        if (this.assignedDriver != null) {
+            throw new IllegalStateException(
+                    "Order already has an assigned driver"
+            );
+        }
+
+        this.assignedDriver = driver;
+    }
 }

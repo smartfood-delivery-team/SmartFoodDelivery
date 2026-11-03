@@ -1,13 +1,13 @@
 package com.smartfood.presentation;
 
-import com.smartfood.domain.MenuItem;
-import com.smartfood.domain.Order;
-import com.smartfood.domain.OrderItem;
-import com.smartfood.domain.Restaurant;
-import com.smartfood.domain.Role;
-import com.smartfood.domain.User;
+import com.smartfood.domain.*;
+
+import com.smartfood.repository.OrderRepository;
 
 import com.smartfood.service.AuthService;
+import com.smartfood.service.DriverService;
+import com.smartfood.service.FastestDriverStrategy;
+import com.smartfood.service.NearestDriverStrategy;
 import com.smartfood.service.OrderService;
 import com.smartfood.service.RestaurantService;
 
@@ -15,43 +15,81 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * Interactive console for the Smart Food Delivery System.
+ *
+ * Supports customer and manager operations.
+ */
 public class ConsoleMenu {
 
     private final AuthService authService;
     private final RestaurantService restaurantService;
     private final OrderService orderService;
+    private final DriverService driverService;
+    private final OrderRepository orderRepository;
     private final Scanner scanner;
 
     private boolean running = true;
 
     // =====================================================
-    // CONSTRUCTORS
+    // CONSTRUCTOR - SPRINT 1
     // =====================================================
 
-    // Original constructor: retained for Sprint 1 tests
     public ConsoleMenu(
             AuthService authService,
             RestaurantService restaurantService,
             Scanner scanner
     ) {
+
         this(
                 authService,
                 restaurantService,
+                null,
+                null,
                 null,
                 scanner
         );
     }
 
-    // Sprint 2 constructor
+    // =====================================================
+    // CONSTRUCTOR - SPRINT 2
+    // =====================================================
+
     public ConsoleMenu(
             AuthService authService,
             RestaurantService restaurantService,
             OrderService orderService,
             Scanner scanner
     ) {
+
+        this(
+                authService,
+                restaurantService,
+                orderService,
+                null,
+                null,
+                scanner
+        );
+    }
+
+    // =====================================================
+    // CONSTRUCTOR - SPRINT 3
+    // =====================================================
+
+    public ConsoleMenu(
+            AuthService authService,
+            RestaurantService restaurantService,
+            OrderService orderService,
+            DriverService driverService,
+            OrderRepository orderRepository,
+            Scanner scanner
+    ) {
+
         this.authService = authService;
         this.restaurantService = restaurantService;
         this.orderService = orderService;
+        this.driverService = driverService;
+        this.orderRepository = orderRepository;
         this.scanner = scanner;
     }
 
@@ -100,14 +138,28 @@ public class ConsoleMenu {
     private void showWelcomeMenu() {
 
         System.out.println();
-        System.out.println("==============================================");
-        System.out.println("          SMART FOOD DELIVERY SYSTEM          ");
-        System.out.println("==============================================");
-        System.out.println("               MAIN MENU                      ");
-        System.out.println("----------------------------------------------");
+        System.out.println(
+                "=============================================="
+        );
+        System.out.println(
+                "          SMART FOOD DELIVERY SYSTEM          "
+        );
+        System.out.println(
+                "=============================================="
+        );
+        System.out.println(
+                "               MAIN MENU                      "
+        );
+        System.out.println(
+                "----------------------------------------------"
+        );
+
         System.out.println("  1. Login");
         System.out.println("  0. Exit");
-        System.out.println("----------------------------------------------");
+
+        System.out.println(
+                "----------------------------------------------"
+        );
     }
 
     // =====================================================
@@ -117,9 +169,15 @@ public class ConsoleMenu {
     private void handleLogin() {
 
         System.out.println();
-        System.out.println("==============================================");
-        System.out.println("                  LOGIN                       ");
-        System.out.println("==============================================");
+        System.out.println(
+                "=============================================="
+        );
+        System.out.println(
+                "                  LOGIN                       "
+        );
+        System.out.println(
+                "=============================================="
+        );
 
         System.out.print("Username: ");
 
@@ -188,26 +246,40 @@ public class ConsoleMenu {
         while (running) {
 
             System.out.println();
-            System.out.println("==============================================");
-            System.out.println("              CUSTOMER DASHBOARD              ");
-            System.out.println("==============================================");
+            System.out.println(
+                    "=============================================="
+            );
+            System.out.println(
+                    "              CUSTOMER DASHBOARD              "
+            );
+            System.out.println(
+                    "=============================================="
+            );
+
             System.out.println(
                     "Logged in as: " + customer.getUsername()
             );
-            System.out.println("----------------------------------------------");
+
+            System.out.println(
+                    "----------------------------------------------"
+            );
 
             System.out.println("  1. Browse Open Restaurants");
             System.out.println("  2. View Restaurant Menu");
             System.out.println("  3. Logout");
 
             if (orderService != null) {
+
                 System.out.println("  4. Place Order");
                 System.out.println("  5. View My Orders");
                 System.out.println("  6. Cancel Order");
             }
 
             System.out.println("  0. Exit");
-            System.out.println("----------------------------------------------");
+
+            System.out.println(
+                    "----------------------------------------------"
+            );
 
             int choice = readChoice();
 
@@ -282,18 +354,42 @@ public class ConsoleMenu {
         while (running) {
 
             System.out.println();
-            System.out.println("==============================================");
-            System.out.println("              MANAGER DASHBOARD               ");
-            System.out.println("==============================================");
+            System.out.println(
+                    "=============================================="
+            );
+            System.out.println(
+                    "              MANAGER DASHBOARD               "
+            );
+            System.out.println(
+                    "=============================================="
+            );
+
             System.out.println(
                     "Logged in as: " + manager.getUsername()
             );
-            System.out.println("----------------------------------------------");
+
+            System.out.println(
+                    "----------------------------------------------"
+            );
+
             System.out.println("  1. Browse Open Restaurants");
             System.out.println("  2. View Restaurant Menu");
             System.out.println("  3. Logout");
+
+            if (driverService != null) {
+
+                System.out.println("  4. View Available Drivers");
+                System.out.println("  5. Assign Driver to Order");
+                System.out.println(
+                        "  6. Change Driver Selection Strategy"
+                );
+            }
+
             System.out.println("  0. Exit");
-            System.out.println("----------------------------------------------");
+
+            System.out.println(
+                    "----------------------------------------------"
+            );
 
             int choice = readChoice();
 
@@ -317,6 +413,41 @@ public class ConsoleMenu {
                     );
                     return;
 
+                case 4:
+                    if (driverService != null) {
+                        showAvailableDrivers();
+                    } else {
+                        System.out.println(
+                                "Driver management is unavailable."
+                        );
+                    }
+                    break;
+
+                case 5:
+                    if (driverService != null
+                            && orderService != null
+                            && orderRepository != null) {
+
+                        assignDriverToOrder();
+
+                    } else {
+
+                        System.out.println(
+                                "Driver assignment is unavailable."
+                        );
+                    }
+                    break;
+
+                case 6:
+                    if (driverService != null) {
+                        changeDriverStrategy();
+                    } else {
+                        System.out.println(
+                                "Driver management is unavailable."
+                        );
+                    }
+                    break;
+
                 case 0:
                     running = false;
                     return;
@@ -339,9 +470,15 @@ public class ConsoleMenu {
                 restaurantService.getOpenRestaurants();
 
         System.out.println();
-        System.out.println("==============================================");
-        System.out.println("              OPEN RESTAURANTS                ");
-        System.out.println("==============================================");
+        System.out.println(
+                "=============================================="
+        );
+        System.out.println(
+                "              OPEN RESTAURANTS                "
+        );
+        System.out.println(
+                "=============================================="
+        );
 
         if (restaurants.isEmpty()) {
 
@@ -358,7 +495,9 @@ public class ConsoleMenu {
                 "Delivery Zone"
         );
 
-        System.out.println("----------------------------------------------");
+        System.out.println(
+                "----------------------------------------------"
+        );
 
         for (int i = 0; i < restaurants.size(); i++) {
 
@@ -394,7 +533,6 @@ public class ConsoleMenu {
 
         System.out.println();
         System.out.println("  0. Back");
-        System.out.println("----------------------------------------------");
         System.out.print("Select restaurant number: ");
 
         int choice = readChoice();
@@ -423,7 +561,7 @@ public class ConsoleMenu {
     }
 
     // =====================================================
-    // PRINT MENU ITEMS
+    // PRINT RESTAURANT MENU
     // =====================================================
 
     private void printMenu(
@@ -432,13 +570,23 @@ public class ConsoleMenu {
     ) {
 
         System.out.println();
-        System.out.println("==============================================");
-        System.out.println("             RESTAURANT MENU                  ");
-        System.out.println("==============================================");
+        System.out.println(
+                "=============================================="
+        );
+        System.out.println(
+                "             RESTAURANT MENU                  "
+        );
+        System.out.println(
+                "=============================================="
+        );
+
         System.out.println(
                 "Restaurant: " + restaurant.getName()
         );
-        System.out.println("----------------------------------------------");
+
+        System.out.println(
+                "----------------------------------------------"
+        );
 
         if (menu.isEmpty()) {
 
@@ -455,7 +603,9 @@ public class ConsoleMenu {
                 "Price (NIS)"
         );
 
-        System.out.println("----------------------------------------------");
+        System.out.println(
+                "----------------------------------------------"
+        );
 
         for (int i = 0; i < menu.size(); i++) {
 
@@ -477,14 +627,21 @@ public class ConsoleMenu {
     private void placeOrder(User customer) {
 
         System.out.println();
-        System.out.println("==============================================");
-        System.out.println("                PLACE ORDER                   ");
-        System.out.println("==============================================");
+        System.out.println(
+                "=============================================="
+        );
+        System.out.println(
+                "                PLACE ORDER                   "
+        );
+        System.out.println(
+                "=============================================="
+        );
 
         List<Restaurant> restaurants =
                 restaurantService.getOpenRestaurants();
 
         if (restaurants.isEmpty()) {
+
             System.out.println(
                     "No open restaurants available."
             );
@@ -520,13 +677,15 @@ public class ConsoleMenu {
                 );
 
         if (menu.isEmpty()) {
+
             System.out.println(
                     "This restaurant has no available items."
             );
             return;
         }
 
-        List<OrderItem> selectedItems = new ArrayList<>();
+        List<OrderItem> selectedItems =
+                new ArrayList<>();
 
         while (running) {
 
@@ -619,9 +778,15 @@ public class ConsoleMenu {
             );
 
             System.out.println();
-            System.out.println("==============================================");
-            System.out.println("        ORDER PLACED SUCCESSFULLY             ");
-            System.out.println("==============================================");
+            System.out.println(
+                    "=============================================="
+            );
+            System.out.println(
+                    "        ORDER PLACED SUCCESSFULLY             "
+            );
+            System.out.println(
+                    "=============================================="
+            );
 
             System.out.println(
                     "Order ID: " + order.getId()
@@ -646,7 +811,8 @@ public class ConsoleMenu {
                             + order.getDeliveryAddress()
             );
 
-        } catch (IllegalArgumentException | IllegalStateException e) {
+        } catch (IllegalArgumentException
+                 | IllegalStateException e) {
 
             System.out.println(
                     "Order rejected: " + e.getMessage()
@@ -655,15 +821,21 @@ public class ConsoleMenu {
     }
 
     // =====================================================
-    // SPRINT 2 - VIEW MY ORDERS
+    // SPRINT 2 - VIEW CUSTOMER ORDERS
     // =====================================================
 
     private void showMyOrders(User customer) {
 
         System.out.println();
-        System.out.println("==============================================");
-        System.out.println("                 MY ORDERS                    ");
-        System.out.println("==============================================");
+        System.out.println(
+                "=============================================="
+        );
+        System.out.println(
+                "                 MY ORDERS                    "
+        );
+        System.out.println(
+                "=============================================="
+        );
 
         try {
 
@@ -674,15 +846,18 @@ public class ConsoleMenu {
 
             for (Order order : allOrders) {
 
-                // Only display orders of the logged-in user
-                if (!order.getCustomer().getUsername()
+                if (!order.getCustomer()
+                        .getUsername()
                         .equals(customer.getUsername())) {
+
                     continue;
                 }
 
                 found = true;
 
-                System.out.println("----------------------------------------------");
+                System.out.println(
+                        "----------------------------------------------"
+                );
 
                 System.out.println(
                         "Order ID: " + order.getId()
@@ -706,6 +881,21 @@ public class ConsoleMenu {
                         "Delivery Address: "
                                 + order.getDeliveryAddress()
                 );
+
+                if (order.getAssignedDriver() != null) {
+
+                    System.out.println(
+                            "Assigned Driver: "
+                                    + order.getAssignedDriver()
+                                    .getName()
+                    );
+
+                } else {
+
+                    System.out.println(
+                            "Assigned Driver: Not assigned"
+                    );
+                }
 
                 System.out.println("Items:");
 
@@ -742,9 +932,15 @@ public class ConsoleMenu {
     private void cancelOrder(User customer) {
 
         System.out.println();
-        System.out.println("==============================================");
-        System.out.println("                CANCEL ORDER                  ");
-        System.out.println("==============================================");
+        System.out.println(
+                "=============================================="
+        );
+        System.out.println(
+                "                CANCEL ORDER                  "
+        );
+        System.out.println(
+                "=============================================="
+        );
 
         System.out.print("Enter Order ID: ");
 
@@ -764,7 +960,8 @@ public class ConsoleMenu {
 
         try {
 
-            Order order = orderService.findOrderById(orderId);
+            Order order =
+                    orderService.findOrderById(orderId);
 
             if (order == null) {
 
@@ -774,8 +971,10 @@ public class ConsoleMenu {
                 return;
             }
 
-            // Prevent customers cancelling someone else's order
-            if (!order.getCustomer().getUsername()
+            // Only the customer who owns the order
+            // may cancel it through the console.
+            if (!order.getCustomer()
+                    .getUsername()
                     .equals(customer.getUsername())) {
 
                 System.out.println(
@@ -784,8 +983,16 @@ public class ConsoleMenu {
                 return;
             }
 
-            // The service enforces cancellation status rules
             orderService.cancelOrder(orderId);
+
+// Step 2: Release the assigned driver, if any
+            if (driverService != null && order.getAssignedDriver() != null) {
+
+                // The service requires the order to be CANCELLED.
+                order.setStatus(OrderStatus.CANCELLED);
+
+                driverService.releaseDriver(order);
+            }
 
             System.out.println();
             System.out.println(
@@ -800,11 +1007,233 @@ public class ConsoleMenu {
                     "Status: CANCELLED"
             );
 
-        } catch (IllegalArgumentException | IllegalStateException e) {
+        } catch (IllegalArgumentException
+                 | IllegalStateException e) {
 
             System.out.println(
                     "Cancellation failed: " + e.getMessage()
             );
+        }
+    }
+
+    // =====================================================
+    // SPRINT 3 - VIEW AVAILABLE DRIVERS
+    // =====================================================
+
+    private void showAvailableDrivers() {
+
+        System.out.println();
+        System.out.println(
+                "=============================================="
+        );
+        System.out.println(
+                "             AVAILABLE DRIVERS                "
+        );
+        System.out.println(
+                "=============================================="
+        );
+
+        try {
+
+            List<Driver> drivers =
+                    driverService.getAvailableDrivers();
+
+            if (drivers.isEmpty()) {
+
+                System.out.println(
+                        "No available drivers."
+                );
+                return;
+            }
+
+            System.out.printf(
+                    "%-8s %-15s %-12s %-12s%n",
+                    "ID",
+                    "Name",
+                    "Distance",
+                    "ETA (min)"
+            );
+
+            System.out.println(
+                    "----------------------------------------------"
+            );
+
+            for (Driver driver : drivers) {
+
+                System.out.printf(
+                        "%-8s %-15s %-12.2f %-12d%n",
+                        driver.getId(),
+                        driver.getName(),
+                        driver.getDistance(),
+                        driver.getEstimatedTime()
+                );
+            }
+
+        } catch (IllegalStateException e) {
+
+            System.out.println(
+                    "Could not load drivers: " + e.getMessage()
+            );
+        }
+    }
+
+    // =====================================================
+    // SPRINT 3 - ASSIGN DRIVER TO ORDER
+    // =====================================================
+
+    private void assignDriverToOrder() {
+
+        System.out.println();
+        System.out.println(
+                "=============================================="
+        );
+        System.out.println(
+                "              ASSIGN DRIVER                   "
+        );
+        System.out.println(
+                "=============================================="
+        );
+
+        System.out.print("Enter Order ID: ");
+
+        String orderId = readText();
+
+        if (!running) {
+            return;
+        }
+
+        if (orderId.isBlank()) {
+
+            System.out.println(
+                    "Order ID cannot be empty."
+            );
+            return;
+        }
+
+        try {
+
+            Order order =
+                    orderService.findOrderById(orderId);
+
+            if (order == null) {
+
+                System.out.println(
+                        "Order not found."
+                );
+                return;
+            }
+
+            // Select and assign a driver using
+            // the currently configured Strategy.
+            Driver selectedDriver =
+                    driverService.assignDriver(order);
+
+            // Persist the order-driver relationship.
+            orderRepository.save(order);
+
+            System.out.println();
+            System.out.println(
+                    "=============================================="
+            );
+            System.out.println(
+                    "        DRIVER ASSIGNED SUCCESSFULLY          "
+            );
+            System.out.println(
+                    "=============================================="
+            );
+
+            System.out.println(
+                    "Order ID: " + order.getId()
+            );
+
+            System.out.println(
+                    "Driver ID: " + selectedDriver.getId()
+            );
+
+            System.out.println(
+                    "Driver Name: " + selectedDriver.getName()
+            );
+
+            System.out.printf(
+                    "Distance: %.2f km%n",
+                    selectedDriver.getDistance()
+            );
+
+            System.out.println(
+                    "Estimated Arrival: "
+                            + selectedDriver.getEstimatedTime()
+                            + " minutes"
+            );
+
+            System.out.println(
+                    "Driver Status: BUSY"
+            );
+
+        } catch (IllegalArgumentException
+                 | IllegalStateException e) {
+
+            System.out.println(
+                    "Driver assignment failed: " + e.getMessage()
+            );
+        }
+    }
+
+    // =====================================================
+    // SPRINT 3 - CHANGE DRIVER SELECTION STRATEGY
+    // =====================================================
+
+    private void changeDriverStrategy() {
+
+        System.out.println();
+        System.out.println(
+                "=============================================="
+        );
+        System.out.println(
+                "          DRIVER SELECTION STRATEGY           "
+        );
+        System.out.println(
+                "=============================================="
+        );
+
+        System.out.println("  1. Nearest Driver");
+        System.out.println("  2. Fastest Driver");
+        System.out.println("  0. Back");
+
+        int choice = readChoice();
+
+        if (!running || choice == 0) {
+            return;
+        }
+
+        switch (choice) {
+
+            case 1:
+
+                driverService.setSelectionStrategy(
+                        new NearestDriverStrategy()
+                );
+
+                System.out.println(
+                        "Strategy changed to Nearest Driver."
+                );
+                break;
+
+            case 2:
+
+                driverService.setSelectionStrategy(
+                        new FastestDriverStrategy()
+                );
+
+                System.out.println(
+                        "Strategy changed to Fastest Driver."
+                );
+                break;
+
+            default:
+
+                System.out.println(
+                        "Invalid strategy selection."
+                );
         }
     }
 
@@ -817,6 +1246,7 @@ public class ConsoleMenu {
         System.out.print("Enter your choice: ");
 
         if (!scanner.hasNextLine()) {
+
             running = false;
             return -1;
         }
@@ -837,9 +1267,14 @@ public class ConsoleMenu {
         }
     }
 
+    // =====================================================
+    // READ TEXT
+    // =====================================================
+
     private String readText() {
 
         if (!scanner.hasNextLine()) {
+
             running = false;
             return "";
         }

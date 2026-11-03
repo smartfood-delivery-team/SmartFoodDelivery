@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 /** In-memory storage for delivery drivers. */
-public class DriverRepository {
+public class DriverRepository implements DriverStore {
 
     private final Map<String, Driver> drivers = new HashMap<>();
 

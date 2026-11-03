@@ -32,8 +32,10 @@ public class Driver {
             throw new IllegalArgumentException("Driver name cannot be empty");
         }
 
-        if (distance < 0) {
-            throw new IllegalArgumentException("Distance cannot be negative");
+        if (!Double.isFinite(distance) || distance < 0) {
+            throw new IllegalArgumentException(
+                    "Distance must be finite and non-negative"
+            );
         }
 
         if (estimatedTime < 0) {
