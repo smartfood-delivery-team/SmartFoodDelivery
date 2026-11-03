@@ -25,8 +25,7 @@ class OrderStatusTransitionTest {
 
         repository = mock(OrderRepository.class);
 
-        order = TestDataFactory.createEmptyOrder("ORD-1");
-
+        order = TestDataFactory.createEmptyOrder("ORD-S4");
         when(repository.findById("ORD-S4")).thenReturn(order);
 
         orderService = new OrderService(

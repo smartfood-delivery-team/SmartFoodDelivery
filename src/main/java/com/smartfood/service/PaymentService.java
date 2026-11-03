@@ -2,7 +2,7 @@ package com.smartfood.service;
 
 import com.smartfood.domain.Order;
 import com.smartfood.domain.PaymentStatus;
-
+import com.smartfood.domain.OrderStatus;
 /**
  * Handles cash payments for customer orders.
  *
@@ -23,6 +23,11 @@ public class PaymentService {
         if (order == null) {
             throw new IllegalArgumentException(
                 "Order cannot be null"
+            );
+        }
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new IllegalStateException(
+                    "Cannot pay for a cancelled order"
             );
         }
 
