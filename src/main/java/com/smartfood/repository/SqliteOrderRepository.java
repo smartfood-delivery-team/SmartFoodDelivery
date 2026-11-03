@@ -1,5 +1,5 @@
 package com.smartfood.repository;
-
+import com.smartfood.domain.Driver;
 import com.smartfood.database.DatabaseManager;
 import com.smartfood.domain.*;
 import com.smartfood.database.DatabaseManager;
@@ -32,10 +32,11 @@ public class SqliteOrderRepository implements OrderRepository {
             """;
 
         String updateOrderSql = """
-            UPDATE orders
-            SET status = ?
-            WHERE id = ?
-            """;
+        UPDATE orders
+        SET status = ?,
+            assigned_driver_id = ?
+        WHERE id = ?
+        """;
 
         String findRestaurantSql = """
             SELECT id
@@ -44,16 +45,17 @@ public class SqliteOrderRepository implements OrderRepository {
             """;
 
         String insertOrderSql = """
-            INSERT INTO orders (
-                id,
-                customer_username,
-                restaurant_id,
-                delivery_address,
-                status,
-                total
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-            """;
+        INSERT INTO orders (
+            id,
+            customer_username,
+            restaurant_id,
+            delivery_address,
+            status,
+            total,
+            assigned_driver_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """;
 
         String findMenuSql = """
             SELECT id, price, available
@@ -103,8 +105,30 @@ public class SqliteOrderRepository implements OrderRepository {
                     try (PreparedStatement statement =
                                  connection.prepareStatement(updateOrderSql)) {
 
-                        statement.setString(1, order.getStatus().name());
-                        statement.setString(2, order.getId());
+                        statement.setString(
+                                1,
+                                order.getStatus().name()
+                        );
+
+                        if (order.getAssignedDriver() != null) {
+
+                            statement.setString(
+                                    2,
+                                    order.getAssignedDriver().getId()
+                            );
+
+                        } else {
+
+                            statement.setNull(
+                                    2,
+                                    java.sql.Types.VARCHAR
+                            );
+                        }
+
+                        statement.setString(
+                                3,
+                                order.getId()
+                        );
 
                         statement.executeUpdate();
                     }
@@ -164,7 +188,20 @@ public class SqliteOrderRepository implements OrderRepository {
                         );
 
                         statement.setDouble(6, order.getTotal());
+                        if (order.getAssignedDriver() != null) {
 
+                            statement.setString(
+                                    7,
+                                    order.getAssignedDriver().getId()
+                            );
+
+                        } else {
+
+                            statement.setNull(
+                                    7,
+                                    java.sql.Types.VARCHAR
+                            );
+                        }
                         statement.executeUpdate();
                     }
 
@@ -287,7 +324,7 @@ public class SqliteOrderRepository implements OrderRepository {
                 o.id,
                 o.delivery_address,
                 o.status,
-
+                o.assigned_driver_id,
                 u.username,
                 u.password_hash,
                 u.role,
@@ -420,8 +457,53 @@ public class SqliteOrderRepository implements OrderRepository {
                             deliveryAddress
                     );
 
-                    // Restore the saved status
                     order.setStatus(status);
+
+// Restore assigned driver, if one exists.
+                    String assignedDriverId =
+                            result.getString("assigned_driver_id");
+
+                    if (assignedDriverId != null) {
+
+                        String driverSql = """
+            SELECT
+                id,
+                name,
+                available,
+                distance,
+                estimated_time
+            FROM drivers
+            WHERE id = ?
+            """;
+
+                        try (PreparedStatement driverStatement =
+                                     connection.prepareStatement(driverSql)) {
+
+                            driverStatement.setString(1, assignedDriverId);
+
+                            try (ResultSet driverResult =
+                                         driverStatement.executeQuery()) {
+
+                                if (!driverResult.next()) {
+                                    throw new IllegalStateException(
+                                            "Assigned driver not found: "
+                                                    + assignedDriverId
+                                    );
+                                }
+
+                                Driver driver = new Driver(
+                                        driverResult.getString("id"),
+                                        driverResult.getString("name"),
+                                        driverResult.getInt("available") == 1,
+                                        driverResult.getDouble("distance"),
+                                        driverResult.getInt("estimated_time")
+                                );
+
+                                // Do not assign again; restore saved assignment.
+                                order.restoreAssignedDriver(driver);
+                            }
+                        }
+                    }
 
                     return order;
                 }

@@ -3,6 +3,7 @@ package com.smartfood.database;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.ResultSet;
 
 public class DatabaseInitializer {
 
@@ -123,7 +124,22 @@ public class DatabaseInitializer {
                         REFERENCES menu_items(id)
                 )
                 """;
+        String createDriversTable = """
+        CREATE TABLE IF NOT EXISTS drivers (
+            id TEXT PRIMARY KEY,
 
+            name TEXT NOT NULL,
+
+            available INTEGER NOT NULL DEFAULT 1
+                CHECK (available IN (0, 1)),
+
+            distance REAL NOT NULL
+                CHECK (distance >= 0),
+
+            estimated_time INTEGER NOT NULL
+                CHECK (estimated_time >= 0)
+        )
+        """;
         // ==========================================
         // EXECUTE TABLE CREATION
         // ==========================================
@@ -139,6 +155,36 @@ public class DatabaseInitializer {
 
             statement.execute(createOrdersTable);
             statement.execute(createOrderItemsTable);
+            statement.execute(createDriversTable);
+
+
+// Check whether the orders table already has the column.
+            boolean hasAssignedDriverColumn = false;
+
+            try (ResultSet columns =
+                         statement.executeQuery("PRAGMA table_info(orders)")) {
+
+                while (columns.next()) {
+
+                    if ("assigned_driver_id".equals(
+                            columns.getString("name")
+                    )) {
+                        hasAssignedDriverColumn = true;
+                        break;
+                    }
+                }
+            }
+
+// Add the column only when it does not exist.
+            if (!hasAssignedDriverColumn) {
+
+                statement.execute("""
+            ALTER TABLE orders
+            ADD COLUMN assigned_driver_id TEXT
+            REFERENCES drivers(id)
+            """);
+            }
         }
     }
+
 }
