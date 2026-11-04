@@ -272,6 +272,16 @@ public class DatabaseInitializer {
                     """
             );
 
+            // Sprint 5: order/driver polymorphic data
+            addColumnIfMissing(connection,"orders","order_type",
+                    "order_type TEXT NOT NULL DEFAULT 'STANDARD'");
+            addColumnIfMissing(connection,"orders","scheduled_for",
+                    "scheduled_for TEXT");
+            addColumnIfMissing(connection,"drivers","driver_type",
+                    "driver_type TEXT NOT NULL DEFAULT 'GENERAL'");
+            addColumnIfMissing(connection,"drivers","remaining_range_km",
+                    "remaining_range_km REAL NOT NULL DEFAULT 0");
+
             // Sprint 4: Payment status
             addColumnIfMissing(
                     connection,

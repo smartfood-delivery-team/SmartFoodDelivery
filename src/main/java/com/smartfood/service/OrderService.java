@@ -1,6 +1,11 @@
 package com.smartfood.service;
 
 import com.smartfood.domain.Order;
+import com.smartfood.domain.OrderType;
+import com.smartfood.domain.StandardOrder;
+import com.smartfood.domain.ExpressOrder;
+import com.smartfood.domain.ScheduledOrder;
+import java.time.LocalDateTime;
 import com.smartfood.domain.OrderItem;
 import com.smartfood.domain.OrderStatus;
 import com.smartfood.domain.Restaurant;
@@ -76,6 +81,14 @@ public class OrderService {
             String deliveryAddress,
             String customerZone
     ) {
+        return placeOrder(customer,restaurant,items,deliveryAddress,customerZone,OrderType.STANDARD,null);
+    }
+
+    public Order placeOrder(User customer,Restaurant restaurant,List<OrderItem> items,
+                            String deliveryAddress,String customerZone,OrderType type,LocalDateTime schedule) {
+        if (type == null) throw new IllegalArgumentException("Order type required");
+        if (type == OrderType.SCHEDULED && (schedule == null || !schedule.isAfter(LocalDateTime.now())))
+            throw new IllegalArgumentException("Scheduled time must be in the future");
 
         // Step 1: Validate customer
         if (customer == null) {
@@ -181,13 +194,11 @@ public class OrderService {
         String orderId = "ORD-" + UUID.randomUUID();
 
         // Step 9: Create the order
-        Order order = new Order(
-                orderId,
-                customer,
-                restaurant,
-                items,
-                deliveryAddress
-        );
+        Order order = switch (type) {
+            case STANDARD -> new StandardOrder(orderId,customer,restaurant,items,deliveryAddress);
+            case EXPRESS -> new ExpressOrder(orderId,customer,restaurant,items,deliveryAddress);
+            case SCHEDULED -> new ScheduledOrder(orderId,customer,restaurant,items,deliveryAddress,schedule);
+        };
 
         // Step 10: Persist the order
         repository.save(order);

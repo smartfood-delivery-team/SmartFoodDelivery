@@ -3,6 +3,10 @@ package com.smartfood.presentation;
 import com.smartfood.domain.Driver;
 import com.smartfood.domain.MenuItem;
 import com.smartfood.domain.Order;
+import com.smartfood.domain.OrderType;
+import com.smartfood.domain.ScheduledOrder;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import com.smartfood.domain.OrderItem;
 import com.smartfood.domain.OrderStatus;
 import com.smartfood.domain.PaymentStatus;
@@ -743,15 +747,30 @@ public class ConsoleMenu {
             return;
         }
 
-        try {
+        System.out.println("Order type: 1 Standard, 2 Express, 3 Scheduled, 0 Back");
+        int typeChoice = readChoice();
+        if (!running || typeChoice == 0) return;
+        OrderType type;
+        switch (typeChoice) {
+            case 1 -> type = OrderType.STANDARD;
+            case 2 -> type = OrderType.EXPRESS;
+            case 3 -> type = OrderType.SCHEDULED;
+            default -> { System.out.println("Invalid order type"); return; }
+        }
+        LocalDateTime scheduledFor = null;
+        if (type == OrderType.SCHEDULED) {
+            System.out.print("Delivery time (YYYY-MM-DDTHH:MM): ");
+            String value = readText();
+            if (!running) return;
+            try { scheduledFor = LocalDateTime.parse(value); }
+            catch (DateTimeParseException ex) {
+                System.out.println("Invalid date/time format"); return;
+            }
+        }
 
-            Order order = orderService.placeOrder(
-                    customer,
-                    selectedRestaurant,
-                    selectedItems,
-                    deliveryAddress,
-                    deliveryZone
-            );
+        try {
+            Order order = orderService.placeOrder(customer,selectedRestaurant,selectedItems,
+                    deliveryAddress,deliveryZone,type,scheduledFor);
 
             System.out.println();
             System.out.println("==============================================");
@@ -759,6 +778,7 @@ public class ConsoleMenu {
             System.out.println("==============================================");
 
             System.out.println("Order ID: " + order.getId());
+            System.out.println("Order Type: " + order.getOrderType());
             System.out.println(
                     "Restaurant: " + order.getRestaurant().getName()
             );
@@ -812,6 +832,9 @@ public class ConsoleMenu {
 
                 System.out.println("----------------------------------------------");
                 System.out.println("Order ID: " + order.getId());
+                System.out.println("Order Type: " + order.getOrderType());
+                if (order instanceof ScheduledOrder scheduled)
+                    System.out.println("Scheduled For: " + scheduled.getScheduledFor());
 
                 System.out.println(
                         "Restaurant: " + order.getRestaurant().getName()
@@ -996,6 +1019,7 @@ public class ConsoleMenu {
                         driver.getDistance(),
                         driver.getEstimatedTime()
                 );
+                System.out.println("         Type: " + driver.getDriverType());
             }
 
         } catch (IllegalStateException e) {

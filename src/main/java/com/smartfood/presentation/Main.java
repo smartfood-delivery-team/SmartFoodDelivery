@@ -4,7 +4,7 @@ import com.smartfood.database.DatabaseInitializer;
 import com.smartfood.database.DatabaseManager;
 import com.smartfood.database.DataSeeder;
 
-import com.smartfood.domain.Driver;
+import com.smartfood.domain.*;
 
 import com.smartfood.repository.DriverStore;
 import com.smartfood.repository.OrderRepository;
@@ -103,7 +103,7 @@ public class Main {
             if (driverRepository.findAll().isEmpty()) {
 
                 driverRepository.save(
-                        new Driver(
+                        new BicycleDriver(
                                 "D1",
                                 "Omar",
                                 true,
@@ -113,7 +113,7 @@ public class Main {
                 );
 
                 driverRepository.save(
-                        new Driver(
+                        new MotorcycleDriver(
                                 "D2",
                                 "Ahmad",
                                 true,
@@ -123,7 +123,7 @@ public class Main {
                 );
 
                 driverRepository.save(
-                        new Driver(
+                        new CarDriver(
                                 "D3",
                                 "Khaled",
                                 true,
@@ -131,6 +131,11 @@ public class Main {
                                 12
                         )
                 );
+            }
+
+            // Sprint 5: one electric vehicle in fresh demo databases.
+            if (driverRepository.findById("D4") == null) {
+                driverRepository.save(new ElectricVehicleDriver("D4","Sara",true,3.0,9,80.0));
             }
 
             // ==========================================
