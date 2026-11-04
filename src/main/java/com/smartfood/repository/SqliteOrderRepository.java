@@ -2,7 +2,8 @@ package com.smartfood.repository;
 
 import com.smartfood.database.DatabaseManager;
 
-import com.smartfood.domain.Driver;
+import com.smartfood.domain.*;
+import java.time.LocalDateTime;
 import com.smartfood.domain.MenuItem;
 import com.smartfood.domain.Order;
 import com.smartfood.domain.OrderItem;
@@ -91,7 +92,9 @@ public class SqliteOrderRepository implements OrderRepository {
                     delivery_distance_km = ?,
                     delivery_fee = ?,
                     pricing_strategy = ?,
-                    payment_status = ?
+                    payment_status = ?,
+                    order_type = ?,
+                    scheduled_for = ?
                 WHERE id = ?
                 """;
 
@@ -113,9 +116,11 @@ public class SqliteOrderRepository implements OrderRepository {
                     delivery_distance_km,
                     delivery_fee,
                     pricing_strategy,
-                    payment_status
+                    payment_status,
+                    order_type,
+                    scheduled_for
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         String findMenuSql = """
@@ -220,10 +225,9 @@ public class SqliteOrderRepository implements OrderRepository {
                                 order.getPaymentStatus().name()
                         );
 
-                        statement.setString(
-                                7,
-                                order.getId()
-                        );
+                        statement.setString(7, order.getOrderType().name());
+                        statement.setString(8, scheduleValue(order));
+                        statement.setString(9, order.getId());
 
                         statement.executeUpdate();
                     }
@@ -334,6 +338,8 @@ public class SqliteOrderRepository implements OrderRepository {
                                 11,
                                 order.getPaymentStatus().name()
                         );
+                        statement.setString(12, order.getOrderType().name());
+                        statement.setString(13, scheduleValue(order));
 
                         statement.executeUpdate();
                     }
@@ -515,6 +521,8 @@ public class SqliteOrderRepository implements OrderRepository {
                     o.delivery_fee,
                     o.pricing_strategy,
                     o.payment_status,
+                    o.order_type,
+                    o.scheduled_for,
 
                     u.username,
                     u.password_hash,
@@ -559,7 +567,9 @@ public class SqliteOrderRepository implements OrderRepository {
                     name,
                     available,
                     distance,
-                    estimated_time
+                    estimated_time,
+                    driver_type,
+                    remaining_range_km
                 FROM drivers
                 WHERE id = ?
                 """;
@@ -660,13 +670,13 @@ public class SqliteOrderRepository implements OrderRepository {
                 // STEP 4: RECONSTRUCT ORDER
                 // ==========================================
 
-                Order order = new Order(
-                        id,
-                        customer,
-                        restaurant,
-                        items,
-                        deliveryAddress
-                );
+                OrderType type = OrderType.valueOf(result.getString("order_type"));
+                Order order = switch (type) {
+                    case STANDARD -> new StandardOrder(id, customer, restaurant, items, deliveryAddress);
+                    case EXPRESS -> new ExpressOrder(id, customer, restaurant, items, deliveryAddress);
+                    case SCHEDULED -> ScheduledOrder.restore(id, customer, restaurant, items, deliveryAddress,
+                            LocalDateTime.parse(result.getString("scheduled_for")));
+                };
 
                 // Restore status
                 order.setStatus(status);
@@ -705,13 +715,7 @@ public class SqliteOrderRepository implements OrderRepository {
                                 );
                             }
 
-                            Driver driver = new Driver(
-                                    driverResult.getString("id"),
-                                    driverResult.getString("name"),
-                                    driverResult.getInt("available") == 1,
-                                    driverResult.getDouble("distance"),
-                                    driverResult.getInt("estimated_time")
-                            );
+                            Driver driver = restoreDriver(driverResult);
 
                             // Restore without assigning again
                             order.restoreAssignedDriver(driver);
@@ -920,4 +924,21 @@ public class SqliteOrderRepository implements OrderRepository {
                     );
         };
     }
+    private static String scheduleValue(Order order) {
+        return order instanceof ScheduledOrder scheduled ? scheduled.getScheduledFor().toString() : null;
+    }
+    private static Driver restoreDriver(ResultSet row) throws SQLException {
+        String id=row.getString("id"), name=row.getString("name");
+        boolean available=row.getInt("available")==1;
+        double distance=row.getDouble("distance");
+        int eta=row.getInt("estimated_time");
+        return switch (DriverType.valueOf(row.getString("driver_type"))) {
+            case BICYCLE -> new BicycleDriver(id,name,available,distance,eta);
+            case MOTORCYCLE -> new MotorcycleDriver(id,name,available,distance,eta);
+            case CAR -> new CarDriver(id,name,available,distance,eta);
+            case ELECTRIC_VEHICLE -> new ElectricVehicleDriver(id,name,available,distance,eta,row.getDouble("remaining_range_km"));
+            case GENERAL -> new Driver(id,name,available,distance,eta);
+        };
+    }
+
 }

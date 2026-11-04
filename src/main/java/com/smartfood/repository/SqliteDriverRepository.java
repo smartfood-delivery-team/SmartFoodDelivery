@@ -1,7 +1,7 @@
 package com.smartfood.repository;
 
 import com.smartfood.database.DatabaseManager;
-import com.smartfood.domain.Driver;
+import com.smartfood.domain.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -57,15 +57,19 @@ public class SqliteDriverRepository implements DriverStore {
                     name,
                     available,
                     distance,
-                    estimated_time
+                    estimated_time,
+                    driver_type,
+                    remaining_range_km
                 )
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
 
                 ON CONFLICT(id) DO UPDATE SET
                     name = excluded.name,
                     available = excluded.available,
                     distance = excluded.distance,
-                    estimated_time = excluded.estimated_time
+                    estimated_time = excluded.estimated_time,
+                    driver_type = excluded.driver_type,
+                    remaining_range_km = excluded.remaining_range_km
                 """;
 
         try (
@@ -94,6 +98,8 @@ public class SqliteDriverRepository implements DriverStore {
                     driver.getEstimatedTime()
             );
 
+            statement.setString(6, driver.getDriverType().name());
+            statement.setDouble(7, driver.getRemainingRangeKm());
             statement.executeUpdate();
 
         } catch (SQLException e) {
@@ -125,7 +131,9 @@ public class SqliteDriverRepository implements DriverStore {
                     name,
                     available,
                     distance,
-                    estimated_time
+                    estimated_time,
+                    driver_type,
+                    remaining_range_km
                 FROM drivers
                 WHERE id = ?
                 """;
@@ -170,7 +178,9 @@ public class SqliteDriverRepository implements DriverStore {
                     name,
                     available,
                     distance,
-                    estimated_time
+                    estimated_time,
+                    driver_type,
+                    remaining_range_km
                 FROM drivers
                 ORDER BY id
                 """;
@@ -218,7 +228,9 @@ public class SqliteDriverRepository implements DriverStore {
                     name,
                     available,
                     distance,
-                    estimated_time
+                    estimated_time,
+                    driver_type,
+                    remaining_range_km
                 FROM drivers
                 WHERE available = 1
                 ORDER BY id
@@ -274,12 +286,14 @@ public class SqliteDriverRepository implements DriverStore {
         int estimatedTime =
                 result.getInt("estimated_time");
 
-        return new Driver(
-                id,
-                name,
-                available,
-                distance,
-                estimatedTime
-        );
+        DriverType type = DriverType.valueOf(result.getString("driver_type"));
+        return switch (type) {
+            case BICYCLE -> new BicycleDriver(id,name,available,distance,estimatedTime);
+            case MOTORCYCLE -> new MotorcycleDriver(id,name,available,distance,estimatedTime);
+            case CAR -> new CarDriver(id,name,available,distance,estimatedTime);
+            case ELECTRIC_VEHICLE -> new ElectricVehicleDriver(id,name,available,distance,estimatedTime,
+                    result.getDouble("remaining_range_km"));
+            case GENERAL -> new Driver(id,name,available,distance,estimatedTime);
+        };
     }
 }

@@ -130,9 +130,11 @@ public class DriverService {
         List<Driver> availableDrivers =
                 driverRepository.findAvailableDrivers();
 
-        // Step 5: Select driver using Strategy Pattern
-        Driver selectedDriver =
-                selectionStrategy.selectDriver(availableDrivers);
+        // Sprint 5: select only drivers whose type-specific rules allow this order.
+        List<Driver> eligibleDrivers = availableDrivers.stream()
+                .filter(driver -> driver.canDeliver(order))
+                .toList();
+        Driver selectedDriver = selectionStrategy.selectDriver(eligibleDrivers);
 
         // Step 6: Validate selected driver
         if (selectedDriver == null
@@ -144,7 +146,7 @@ public class DriverService {
         }
 
         // Prevent a strategy from returning an unrelated driver
-        boolean driverInAvailableList = availableDrivers.stream()
+        boolean driverInAvailableList = eligibleDrivers.stream()
                 .anyMatch(driver ->
                         driver.getId().equals(selectedDriver.getId())
                 );

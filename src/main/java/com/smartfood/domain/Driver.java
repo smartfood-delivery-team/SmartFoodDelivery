@@ -52,6 +52,12 @@ public class Driver {
     /**
      * Returns the driver ID.
      */
+    /** Default drivers are general-purpose for backward compatibility. */
+    public DriverType getDriverType() { return DriverType.GENERAL; }
+    /** Return whether the driver can handle this specific order. */
+    public boolean canDeliver(Order order) { return order != null; }
+    /** Electric vehicle range, otherwise zero. */
+    public double getRemainingRangeKm() { return 0.0; }
     public String getId() {
         return id;
     }
@@ -92,7 +98,7 @@ public class Driver {
 
         if (!available) {
             throw new IllegalStateException(
-                "Driver is already busy"
+                    "Driver is already busy"
             );
         }
 

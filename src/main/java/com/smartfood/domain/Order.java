@@ -95,6 +95,8 @@ public class Order {
     // Basic Order Information
     // ==========================================
 
+    public OrderType getOrderType() { return OrderType.STANDARD; }
+
     public String getId() {
         return id;
     }
@@ -168,13 +170,13 @@ public class Order {
 
         if (driver == null) {
             throw new IllegalArgumentException(
-                "Driver cannot be null"
+                    "Driver cannot be null"
             );
         }
 
         if (assignedDriver != null) {
             throw new IllegalStateException(
-                "Order already has an assigned driver"
+                    "Order already has an assigned driver"
             );
         }
 
@@ -198,7 +200,7 @@ public class Order {
 
         if (!Double.isFinite(distanceKm) || distanceKm < 0) {
             throw new IllegalArgumentException(
-                "Delivery distance must be a non-negative finite number"
+                    "Delivery distance must be a non-negative finite number"
             );
         }
 
@@ -239,7 +241,7 @@ public class Order {
 
         if (pricingStrategy == null) {
             throw new IllegalArgumentException(
-                "Pricing strategy cannot be null"
+                    "Pricing strategy cannot be null"
             );
         }
 
@@ -288,7 +290,7 @@ public class Order {
 
         if (paymentStatus == null) {
             throw new IllegalArgumentException(
-                "Payment status cannot be null"
+                    "Payment status cannot be null"
             );
         }
 
