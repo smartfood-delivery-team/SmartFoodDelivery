@@ -31,6 +31,7 @@ import com.smartfood.service.RestaurantService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Scanner;
 
 /**
@@ -129,6 +130,9 @@ public class ConsoleMenu {
         this.orderRepository = orderRepository;
         this.paymentService = paymentService;
         this.scanner = scanner;
+
+        // Always print numbers like 25.00 regardless of the device language
+        Locale.setDefault(Locale.Category.FORMAT, Locale.US);
     }
 
     // =====================================================
